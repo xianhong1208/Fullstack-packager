@@ -127,12 +127,12 @@ export default function RoleManagementPage() {
       render: (_, record) => (
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            record.is_system ? 'bg-amber-500/20' : 'bg-cyan-500/20'
+            record.is_system ? 'bg-amber-500/20' : 'bg-cyber-500/20'
           }`}>
             {record.is_system ? (
               <LockOutlined className="text-amber-400" />
             ) : (
-              <TeamOutlined className="text-cyan-400" />
+              <TeamOutlined className="text-cyber-400" />
             )}
           </div>
           <div>
@@ -205,7 +205,7 @@ export default function RoleManagementPage() {
                 aria-label="編輯角色"
                 icon={<EditOutlined />}
                 onClick={() => handleEdit(record)}
-                className="text-cyan-400 hover:text-cyan-300"
+                className="text-cyber-400 hover:text-cyber-300"
               />
               {!record.is_system && (
                 <Button
@@ -213,7 +213,7 @@ export default function RoleManagementPage() {
                   aria-label="刪除角色"
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(record)}
-                  className="text-red-400 hover:text-red-300"
+                  className="text-alert-400 hover:text-alert-400"
                 />
               )}
             </>
@@ -260,7 +260,7 @@ export default function RoleManagementPage() {
           rowKey="id"
           loading={{
             spinning: isLoading,
-            indicator: <LoadingOutlined className="text-cyan-400" />,
+            indicator: <LoadingOutlined className="text-cyber-400" />,
           }}
           pagination={false}
           locale={{

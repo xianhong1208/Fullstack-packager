@@ -148,8 +148,8 @@ function AppLayout() {
     <div className="h-full flex flex-col bg-void-900/50">
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-5 border-b border-gray-700/50">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 flex items-center justify-center">
-          <BuildOutlined className="text-lg text-cyan-400" />
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyber-500/20 to-cyber-600/20 border border-cyber-500/30 flex items-center justify-center">
+          <BuildOutlined className="text-lg text-cyber-400" />
         </div>
         <span className="text-lg font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
           Build Center
@@ -167,7 +167,7 @@ function AppLayout() {
             <span className="text-lg">{item.icon}</span>
             <span className="flex-1 text-left">{item.label}</span>
             {item.badge ? (
-              <span className="px-2 py-0.5 text-xs rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+              <span className="px-2 py-0.5 text-xs rounded-full bg-cyber-500/20 text-cyber-400 border border-cyber-500/30">
                 {item.badge}
               </span>
             ) : null}
@@ -224,8 +224,8 @@ function AppLayout() {
       <div className="p-4 border-t border-gray-700/50">
         <div className="glass-card p-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500/30 to-cyan-600/30 border border-cyan-500/40 flex items-center justify-center">
-              <span className="text-sm font-medium text-cyan-400">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyber-500/30 to-cyber-600/30 border border-cyber-500/40 flex items-center justify-center">
+              <span className="text-sm font-medium text-cyber-400">
                 {user?.username?.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -237,7 +237,7 @@ function AppLayout() {
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              className="p-2 rounded-lg text-gray-400 hover:text-alert-400 hover:bg-alert-500/10 transition-colors"
               title="登出"
               aria-label="登出"
             >
@@ -261,7 +261,7 @@ function AppLayout() {
         type="button"
         onClick={() => setMobileNavOpen(true)}
         aria-label="開啟導覽選單"
-        className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-lg flex items-center justify-center border border-cyan-500/30 bg-void-900/80 text-cyan-400 backdrop-blur hover:bg-cyan-500/10 transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-lg flex items-center justify-center border border-cyber-500/30 bg-void-900/80 text-cyber-400 backdrop-blur hover:bg-cyber-500/10 transition-colors"
       >
         <MenuOutlined className="text-lg" />
       </button>
@@ -276,8 +276,8 @@ function AppLayout() {
         title="導覽選單"
         rootClassName="lg:hidden"
         styles={{
-          body: { padding: 0, background: '#0a0e17' },
-          header: { background: '#0a0e17', borderBottom: '1px solid rgba(55, 65, 81, 0.5)' },
+          body: { padding: 0, background: '#14110d' },
+          header: { background: '#14110d', borderBottom: '1px solid rgba(55, 65, 81, 0.5)' },
         }}
       >
         {sidebarContent}
@@ -342,42 +342,48 @@ function App() {
         locale={zhTW}
         theme={{
           token: {
-            colorPrimary: '#06b6d4',
-            borderRadius: 8,
-            colorBgContainer: '#111827',
-            colorBgElevated: '#1f2937',
-            colorBgLayout: '#0a0e17',
-            colorBgSpotlight: '#243044',
-            colorText: '#e5e7eb',
-            colorTextSecondary: '#9ca3af',
-            colorTextTertiary: '#6b7280',
-            colorBorder: '#374151',
-            colorBorderSecondary: '#243044',
+            // Foundry theme: ember/copper primary on warm graphite.
+            colorPrimary: '#de7c3e',
+            colorInfo: '#5c86a2',
+            colorSuccess: '#4fa98a',
+            colorWarning: '#dfa53a',
+            colorError: '#e0544a',
+            borderRadius: 5,
+            fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+            colorBgContainer: '#1b1712',
+            colorBgElevated: '#241e17',
+            colorBgLayout: '#14110d',
+            colorBgSpotlight: '#322a20',
+            colorText: '#ece4d8',
+            colorTextSecondary: '#a99c8a',
+            colorTextTertiary: '#6e6355',
+            colorBorder: '#3f3527',
+            colorBorderSecondary: '#322a20',
           },
           components: {
             Modal: {
-              contentBg: '#111827',
+              contentBg: '#241e17',
               headerBg: 'transparent',
-              titleColor: '#e5e7eb',
-              colorIcon: '#6b7280',
-              colorIconHover: '#e5e7eb',
+              titleColor: '#ece4d8',
+              colorIcon: '#6e6355',
+              colorIconHover: '#ece4d8',
             },
             Form: {
-              labelColor: '#9ca3af',
+              labelColor: '#a99c8a',
             },
             Input: {
-              colorBgContainer: '#111827',
-              colorBorder: '#374151',
-              colorText: '#e5e7eb',
+              colorBgContainer: '#16120d',
+              colorBorder: '#322a20',
+              colorText: '#ece4d8',
             },
             Select: {
-              colorBgContainer: '#111827',
-              colorBgElevated: '#1f2937',
+              colorBgContainer: '#16120d',
+              colorBgElevated: '#241e17',
               colorBorder: '#374151',
-              optionSelectedBg: 'rgba(6, 182, 212, 0.2)',
+              optionSelectedBg: 'rgba(222, 124, 62, 0.2)',
             },
             Checkbox: {
-              colorBgContainer: '#111827',
+              colorBgContainer: '#1b1712',
               colorBorder: '#374151',
             },
           },

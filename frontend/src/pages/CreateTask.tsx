@@ -811,7 +811,7 @@ export default function CreateTask() {
   const SummaryRow = ({ label, value, mono, highlight }: { label: string; value: React.ReactNode; mono?: boolean; highlight?: boolean }) => (
     <div className="flex py-1.5" style={{ borderBottom: '1px solid rgba(100,100,100,0.15)' }}>
       <span className="text-gray-500 text-sm w-32 flex-shrink-0">{label}</span>
-      <span className={`text-sm ${highlight ? 'text-green-400 font-medium' : 'text-gray-300'} ${mono ? 'font-mono' : ''}`}>
+      <span className={`text-sm ${highlight ? 'text-matrix-400 font-medium' : 'text-gray-300'} ${mono ? 'font-mono' : ''}`}>
         {value || '—'}
       </span>
     </div>
@@ -839,7 +839,7 @@ export default function CreateTask() {
             <button
               type="button"
               onClick={clearDraft}
-              className="text-cyan-400 hover:text-cyan-300"
+              className="text-cyber-400 hover:text-cyber-300"
             >
               清除草稿
             </button>
@@ -872,9 +872,9 @@ export default function CreateTask() {
           border: '1px solid rgba(34, 211, 238, 0.25)',
         }}
       >
-        <SettingOutlined style={{ color: '#22d3ee', fontSize: 16, marginTop: 2 }} />
+        <SettingOutlined style={{ color: '#f09a5e', fontSize: 16, marginTop: 2 }} />
         <div className="flex-1">
-          <div className="text-cyan-300 text-sm font-medium">
+          <div className="text-cyber-300 text-sm font-medium">
             步驟 {currentStep + 1} / {activeStepList.length}:{currentStepDef.title}
           </div>
           <div className="text-gray-400 text-xs mt-0.5" style={{ lineHeight: 1.6 }}>
@@ -1026,7 +1026,7 @@ export default function CreateTask() {
               <Card
                 size="small"
                 title={
-                  <span className="text-cyan-400">
+                  <span className="text-cyber-400">
                     <LinkOutlined className="mr-2" />
                     Git 來源
                   </span>
@@ -1132,7 +1132,7 @@ export default function CreateTask() {
                         <span className="ml-2">正在偵測 Repo 目錄結構...</span>
                       </span>
                     ) : currentPath.startsWith('git:') && directories.length > 0 ? (
-                      <span className="text-green-400">
+                      <span className="text-matrix-400">
                         <ScanOutlined className="mr-1" />
                         已自動掃描到 {directories.length} 個目錄，請到下方「後端設定 → 進階設定」勾選
                       </span>
@@ -1175,7 +1175,7 @@ export default function CreateTask() {
             {hasBackend && (
               <Card
                 size="small"
-                title={<span className="text-cyan-400"><CodeOutlined className="mr-2" />後端設定</span>}
+                title={<span className="text-cyber-400"><CodeOutlined className="mr-2" />後端設定</span>}
                 className="mb-4"
                 style={cardStyle}
                 styles={{ header: cardHeaderStyle }}
@@ -1226,7 +1226,7 @@ export default function CreateTask() {
                       background: 'rgba(239, 68, 68, 0.06)',
                     }}
                   >
-                    <div className="text-sm text-red-300">
+                    <div className="text-sm text-alert-400">
                       這個專案的 .venv 內含多個不同 Python 版本的套件
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
@@ -1311,7 +1311,7 @@ export default function CreateTask() {
                   name="dependency_group"
                   label={
                     <span className="text-gray-300">
-                      依賴群組（uv <code className="text-cyan-400">--group</code>）
+                      依賴群組（uv <code className="text-cyber-400">--group</code>）
                     </span>
                   }
                   tooltip={
@@ -1471,14 +1471,14 @@ export default function CreateTask() {
                                 <button
                                   type="button"
                                   onClick={handleSelectAll}
-                                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                                  className="text-xs text-cyber-400 hover:text-cyber-300"
                                 >
                                   {selectedDirs.length === directories.length ? '取消全選' : '全選'}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => fetchDirectories(projectPath || '')}
-                                  className="text-gray-400 hover:text-cyan-400 p-1"
+                                  className="text-gray-400 hover:text-cyber-400 p-1"
                                   title="重新整理"
                                 >
                                   <ReloadOutlined />
@@ -1496,7 +1496,7 @@ export default function CreateTask() {
                                 <span className="ml-2 text-gray-400 text-sm">載入中...</span>
                               </div>
                             ) : dirError ? (
-                              <div className="text-red-400 text-sm py-2">{dirError}</div>
+                              <div className="text-alert-400 text-sm py-2">{dirError}</div>
                             ) : directories.length === 0 ? (
                               <div className="text-gray-500 text-sm py-2">
                                 {projectPath ? '找不到任何目錄' : '請先輸入專案路徑'}
@@ -1587,7 +1587,7 @@ export default function CreateTask() {
                 size="small"
                 title={
                   <div className="flex items-center justify-between w-full">
-                    <span className="text-green-400"><GlobalOutlined className="mr-2" />前端設定</span>
+                    <span className="text-matrix-400"><GlobalOutlined className="mr-2" />前端設定</span>
                     <Button
                       size="small"
                       icon={<ScanOutlined />}
@@ -1815,7 +1815,7 @@ export default function CreateTask() {
                         {
                           key: 'timeout-help',
                           label: (
-                            <span className="text-xs text-cyan-300">
+                            <span className="text-xs text-cyber-300">
                               我需要調整逾時嗎?(點開看判斷方式)
                             </span>
                           ),
@@ -1994,7 +1994,7 @@ export default function CreateTask() {
             {/* Project Info Summary */}
             <Card
               size="small"
-              title={<span className="text-cyan-400"><AppstoreOutlined className="mr-2" />專案</span>}
+              title={<span className="text-cyber-400"><AppstoreOutlined className="mr-2" />專案</span>}
               className="mb-4"
               style={cardStyle}
               styles={{ header: cardHeaderStyle }}
@@ -2029,7 +2029,7 @@ export default function CreateTask() {
             {hasBackend && (
               <Card
                 size="small"
-                title={<span className="text-cyan-400"><CodeOutlined className="mr-2" />後端 (Nuitka)</span>}
+                title={<span className="text-cyber-400"><CodeOutlined className="mr-2" />後端 (Nuitka)</span>}
                 className="mb-4"
                 style={cardStyle}
                 styles={{ header: cardHeaderStyle }}
@@ -2077,7 +2077,7 @@ export default function CreateTask() {
             {showFrontendSettings && (
               <Card
                 size="small"
-                title={<span className="text-green-400"><GlobalOutlined className="mr-2" />前端</span>}
+                title={<span className="text-matrix-400"><GlobalOutlined className="mr-2" />前端</span>}
                 className="mb-4"
                 style={cardStyle}
                 styles={{ header: cardHeaderStyle }}
@@ -2161,7 +2161,7 @@ export default function CreateTask() {
           {/* Next-step preview helper text — keeps user oriented */}
           {!isLastStep && activeStepList[currentStep + 1] && (
             <div className="mt-6 text-xs text-gray-500 text-right">
-              下一步:<span className="text-cyan-400">{activeStepList[currentStep + 1].title}</span>
+              下一步:<span className="text-cyber-400">{activeStepList[currentStep + 1].title}</span>
               <span className="text-gray-600 ml-2">({activeStepList[currentStep + 1].description})</span>
             </div>
           )}

@@ -111,7 +111,7 @@ export default function History() {
             e.stopPropagation()
             navigate(`/history/${record.task_id}`)
           }}
-          style={{ color: '#22d3ee', cursor: 'pointer' }}
+          style={{ color: '#f09a5e', cursor: 'pointer' }}
         >
           {name}
         </a>

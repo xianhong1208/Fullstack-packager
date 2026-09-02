@@ -275,7 +275,7 @@ export default function SecuritySettingsPage() {
       children: (
         <div className="max-w-md space-y-4">
           {user?.has_security_question && (
-            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm mb-4">
+            <div className="p-3 rounded-lg bg-matrix-500/10 border border-matrix-500/30 text-matrix-400 text-sm mb-4">
               <CheckCircleOutlined className="mr-2" />
               您已設定安全問題，可於下方進行更新。
             </div>
@@ -366,7 +366,7 @@ export default function SecuritySettingsPage() {
             </p>
             <button
               onClick={handleLogoutAllDevices}
-              className="text-red-400 hover:text-red-300 text-sm"
+              className="text-alert-400 hover:text-alert-400 text-sm"
             >
               從所有裝置登出
             </button>
@@ -374,7 +374,7 @@ export default function SecuritySettingsPage() {
 
           {isLoadingSessions ? (
             <div className="flex justify-center py-8">
-              <LoadingOutlined className="text-2xl text-cyan-400" />
+              <LoadingOutlined className="text-2xl text-cyber-400" />
             </div>
           ) : sessions.length === 0 ? (
             <Empty description="沒有使用中的工作階段" />
@@ -385,7 +385,7 @@ export default function SecuritySettingsPage() {
                   key={session.id}
                   className={`p-4 rounded-lg border ${
                     session.is_current
-                      ? 'bg-cyan-500/10 border-cyan-500/30'
+                      ? 'bg-cyber-500/10 border-cyber-500/30'
                       : 'bg-gray-800/50 border-gray-700'
                   }`}
                 >
@@ -429,7 +429,7 @@ export default function SecuritySettingsPage() {
                         okText="撤銷"
                         cancelText="取消"
                       >
-                        <button aria-label="撤銷此工作階段" className="text-gray-400 hover:text-red-400 transition-colors">
+                        <button aria-label="撤銷此工作階段" className="text-gray-400 hover:text-alert-400 transition-colors">
                           <DeleteOutlined />
                         </button>
                       </Popconfirm>

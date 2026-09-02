@@ -112,8 +112,8 @@ export default function LoginPage() {
       <div className="glass-card w-full max-w-md p-8">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 mb-4">
-            <BuildOutlined className="text-3xl text-cyan-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-md bg-gradient-to-br from-cyber-500/20 to-cyber-600/20 border border-cyber-500/30 mb-4">
+            <BuildOutlined className="text-3xl text-cyber-400" />
           </div>
           <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
             Build Center
@@ -200,13 +200,13 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                  className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-cyber-500 focus:ring-cyber-500 focus:ring-offset-0"
                 />
                 <span className="text-sm text-gray-400">記住我</span>
               </label>
               <Link
                 to="/forgot-password"
-                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="text-sm text-cyber-400 hover:text-cyber-300 transition-colors"
               >
                 忘記密碼？
               </Link>
@@ -215,7 +215,7 @@ export default function LoginPage() {
 
           {/* Pending approval message */}
           {pendingApproval && (
-            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm flex items-start gap-2">
+            <div className="p-3 rounded-lg bg-matrix-500/10 border border-matrix-500/30 text-matrix-400 text-sm flex items-start gap-2">
               <CheckCircleOutlined className="mt-0.5 flex-shrink-0" />
               <span>帳號建立成功，請等待管理員審核後即可登入。</span>
             </div>
@@ -223,7 +223,7 @@ export default function LoginPage() {
 
           {/* Error message */}
           {displayError && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <div className="p-3 rounded-lg bg-alert-500/10 border border-alert-500/30 text-alert-400 text-sm">
               {displayError}
             </div>
           )}
@@ -255,7 +255,7 @@ export default function LoginPage() {
             </div>
             <a
               href="/auth/oauth/mcp/login"
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-600 text-gray-200 hover:border-cyan-500 hover:text-cyan-300 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-600 text-gray-200 hover:border-cyber-500 hover:text-cyber-300 transition-colors"
             >
               <SafetyCertificateOutlined />
               使用 MCP Center 登入
@@ -273,7 +273,7 @@ export default function LoginPage() {
                 setLocalError(null)
                 setPendingApproval(false)
               }}
-              className="text-sm text-gray-400 hover:text-cyan-400 transition-colors"
+              className="text-sm text-gray-400 hover:text-cyber-400 transition-colors"
             >
               {isRegisterMode
                 ? '已經有帳號了？登入'

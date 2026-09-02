@@ -95,8 +95,8 @@ export default function ForgotPasswordPage() {
       <div className="glass-card w-full max-w-md p-8">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 mb-4">
-            <BuildOutlined className="text-3xl text-cyan-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyber-500/20 to-cyber-600/20 border border-cyber-500/30 mb-4">
+            <BuildOutlined className="text-3xl text-cyber-400" />
           </div>
           <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
             {step === 'success' ? '密碼已重設' : '忘記密碼'}
@@ -130,7 +130,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              <div className="p-3 rounded-lg bg-alert-500/10 border border-alert-500/30 text-alert-400 text-sm">
                 {error}
               </div>
             )}
@@ -151,7 +151,7 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleAnswerSubmit} className="space-y-5">
             <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
               <div className="flex items-start gap-3">
-                <QuestionCircleOutlined className="text-cyan-400 text-lg mt-0.5" />
+                <QuestionCircleOutlined className="text-cyber-400 text-lg mt-0.5" />
                 <p className="text-gray-300">{securityQuestion}</p>
               </div>
             </div>
@@ -170,7 +170,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              <div className="p-3 rounded-lg bg-alert-500/10 border border-alert-500/30 text-alert-400 text-sm">
                 {error}
               </div>
             )}
@@ -224,7 +224,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              <div className="p-3 rounded-lg bg-alert-500/10 border border-alert-500/30 text-alert-400 text-sm">
                 {error}
               </div>
             )}
@@ -243,8 +243,8 @@ export default function ForgotPasswordPage() {
         {/* Step 4: Success */}
         {step === 'success' && (
           <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30">
-              <CheckCircleOutlined className="text-3xl text-green-400" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-matrix-500/20 border border-matrix-500/30">
+              <CheckCircleOutlined className="text-3xl text-matrix-400" />
             </div>
             <p className="text-gray-300">
               您的密碼已成功重設，現在可以使用新密碼登入。
@@ -263,7 +263,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 text-center">
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-cyan-400 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-cyber-400 transition-colors"
             >
               <ArrowLeftOutlined />
               返回登入

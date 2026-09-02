@@ -81,7 +81,7 @@ const STATUS_COLOR: Record<string, string> = {
   completed: '#4ade80',
   failed: '#f87171',
   cancelled: '#94a3b8',
-  running: '#22d3ee',
+  running: '#f09a5e',
   pending: '#64748b',
 }
 const STATUS_LABEL: Record<string, string> = {
@@ -152,14 +152,14 @@ export default function BuildStatsPanel({ stats }: { stats: BuildStats }) {
         >
           <div className="flex items-center gap-2 mb-1">
             <WarningOutlined style={{ color: '#f87171' }} />
-            <span className="text-sm font-medium text-red-300">
+            <span className="text-sm font-medium text-alert-400">
               編譯環境降級：Python {environment.degraded.join('、')} 無法使用
             </span>
           </div>
           <div className="text-xs text-gray-400">
             這些版本的 venv 直譯器連結已失效，選用時會**靜默退回**服務自己的 Python{' '}
             {environment.service_python}，產出將在執行期出現 ModuleNotFoundError。
-            請在伺服器上執行 <code className="text-cyan-300">bash scripts/setup_nuitka_venvs.sh</code> 重建。
+            請在伺服器上執行 <code className="text-cyber-300">bash scripts/setup_nuitka_venvs.sh</code> 重建。
           </div>
           {environment.targets
             .filter((t) => !t.usable && t.target)

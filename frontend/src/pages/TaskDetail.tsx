@@ -174,7 +174,7 @@ export default function TaskDetail() {
         >
           <div className="flex items-center gap-2 mb-3">
             <CloseCircleOutlined style={{ color: '#f87171' }} />
-            <h3 className="text-base font-medium text-red-300">打包失敗</h3>
+            <h3 className="text-base font-medium text-alert-400">打包失敗</h3>
           </div>
           {task.status_msg && (
             <p className="text-sm text-gray-300 mb-3">{task.status_msg}</p>
@@ -186,7 +186,7 @@ export default function TaskDetail() {
           {result?.failed_stage && (
             <div className="text-xs text-gray-400 mb-3">
               失敗階段：
-              <span className="text-red-300 ml-1">
+              <span className="text-alert-400 ml-1">
                 {STAGE_LABELS[result.failed_stage] ?? result.failed_stage}
               </span>
             </div>
@@ -196,8 +196,8 @@ export default function TaskDetail() {
             <div className="space-y-3 mb-3">
               {result.diagnosis.map((d, i) => (
                 <div key={i} className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                  <div className="text-sm text-red-200 font-medium mb-1">⚠ {d.problem}</div>
-                  <div className="text-sm text-cyan-200">建議：{d.suggestion}</div>
+                  <div className="text-sm text-alert-400 font-medium mb-1">⚠ {d.problem}</div>
+                  <div className="text-sm text-cyber-200">建議：{d.suggestion}</div>
                   {d.evidence && (
                     <code className="block text-xs text-gray-500 mt-1.5 font-mono break-all">
                       {d.evidence}
@@ -248,7 +248,7 @@ export default function TaskDetail() {
                   style={{ background: 'rgba(0,0,0,0.35)' }}
                 >
                   {errLines.map((l, i) => (
-                    <div key={i} className="text-red-300 break-all">{l}</div>
+                    <div key={i} className="text-alert-400 break-all">{l}</div>
                   ))}
                 </div>
               </div>
@@ -296,7 +296,7 @@ export default function TaskDetail() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
                 <div className="text-xs text-gray-500 mb-1"><FileZipOutlined className="mr-1" />產物大小</div>
-                <div className="text-lg font-semibold text-cyan-300">{result.artifact.size_human}</div>
+                <div className="text-lg font-semibold text-cyber-300">{result.artifact.size_human}</div>
               </div>
               <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
                 <div className="text-xs text-gray-500 mb-1">檔案數</div>
@@ -307,7 +307,7 @@ export default function TaskDetail() {
                   <div className="text-xs text-gray-500 mb-1">SHA-256(主執行檔)</div>
                   <Tooltip title="點擊複製完整雜湊值">
                     <code
-                      className="text-xs text-gray-300 font-mono break-all cursor-pointer hover:text-cyan-300"
+                      className="text-xs text-gray-300 font-mono break-all cursor-pointer hover:text-cyber-300"
                       onClick={() => {
                         navigator.clipboard?.writeText(result.artifact?.sha256 || '')
                         message.success('已複製 SHA-256')
@@ -363,7 +363,7 @@ export default function TaskDetail() {
             <div className="mb-6">
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-400">進度</span>
-                <span className="text-cyan-400 font-mono">{task.progress}%</span>
+                <span className="text-cyber-400 font-mono">{task.progress}%</span>
               </div>
               <Progress
                 percent={task.progress}
@@ -374,11 +374,11 @@ export default function TaskDetail() {
                     : task.status === 'failed'
                     ? '#f87171'
                     : {
-                        '0%': '#0891b2',
-                        '100%': '#22d3ee',
+                        '0%': '#c6692f',
+                        '100%': '#f09a5e',
                       }
                 }
-                trailColor="#243044"
+                trailColor="#322a20"
               />
               {task.status_msg && (
                 <p className="text-sm text-gray-400 mt-2">{task.status_msg}</p>
@@ -530,7 +530,7 @@ export default function TaskDetail() {
                   style={{
                     background: 'rgba(6, 182, 212, 0.1)',
                     borderColor: 'rgba(6, 182, 212, 0.3)',
-                    color: '#22d3ee',
+                    color: '#f09a5e',
                   }}
                 >
                   重新打包

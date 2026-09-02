@@ -133,7 +133,7 @@ export default function UserManagementPage() {
           <div>
             <Link
               to={`/admin/users/${record.id}`}
-              className="text-white hover:text-cyan-400 transition-colors"
+              className="text-white hover:text-cyber-400 transition-colors"
             >
               {record.username}
             </Link>
@@ -208,8 +208,8 @@ export default function UserManagementPage() {
               onClick={() => handleStatusChange(record.id, !record.is_active)}
               className={`text-sm ${
                 record.is_active
-                  ? 'text-red-400 hover:text-red-300'
-                  : 'text-green-400 hover:text-green-300'
+                  ? 'text-alert-400 hover:text-alert-400'
+                  : 'text-matrix-400 hover:text-matrix-400'
               }`}
             >
               {record.is_active ? '停用' : '啟用'}
@@ -218,7 +218,7 @@ export default function UserManagementPage() {
           {hasPermission('user:reset_password') && (
             <button
               onClick={() => handleResetPassword(record.id, record.username)}
-              className="text-sm text-cyan-400 hover:text-cyan-300"
+              className="text-sm text-cyber-400 hover:text-cyber-300"
             >
               重設密碼
             </button>
@@ -285,7 +285,7 @@ export default function UserManagementPage() {
 
           <button
             onClick={loadUsers}
-            className="flex items-center gap-2 px-3 py-1 text-gray-400 hover:text-cyan-400 transition-colors"
+            className="flex items-center gap-2 px-3 py-1 text-gray-400 hover:text-cyber-400 transition-colors"
           >
             <ReloadOutlined />
             重新整理
@@ -301,7 +301,7 @@ export default function UserManagementPage() {
           rowKey="id"
           loading={{
             spinning: isLoading,
-            indicator: <LoadingOutlined className="text-cyan-400" />,
+            indicator: <LoadingOutlined className="text-cyber-400" />,
           }}
           pagination={{
             current: page,

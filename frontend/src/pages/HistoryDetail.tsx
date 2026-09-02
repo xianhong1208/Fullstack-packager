@@ -180,14 +180,14 @@ export default function HistoryDetail() {
         >
           <div className="flex items-center gap-2 mb-3">
             <CloseCircleOutlined style={{ color: '#f87171' }} />
-            <h3 className="text-base font-medium text-red-300">打包失敗</h3>
+            <h3 className="text-base font-medium text-alert-400">打包失敗</h3>
           </div>
           {record.result?.diagnosis && record.result.diagnosis.length > 0 ? (
             <div className="space-y-3 mb-3">
               {record.result.diagnosis.map((d, i) => (
                 <div key={i} className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                  <div className="text-sm text-red-200 font-medium mb-1">⚠ {d.problem}</div>
-                  <div className="text-sm text-cyan-200">建議：{d.suggestion}</div>
+                  <div className="text-sm text-alert-400 font-medium mb-1">⚠ {d.problem}</div>
+                  <div className="text-sm text-cyber-200">建議：{d.suggestion}</div>
                   {d.evidence && (
                     <code className="block text-xs text-gray-500 mt-1.5 font-mono break-all">
                       {d.evidence}
@@ -234,7 +234,7 @@ export default function HistoryDetail() {
                 <div className="text-xs text-gray-500 mb-1.5 uppercase tracking-wider">關鍵錯誤行</div>
                 <div className="rounded-lg p-3 font-mono text-xs space-y-1" style={{ background: 'rgba(0,0,0,0.35)' }}>
                   {errLines.map((l, i) => (
-                    <div key={i} className="text-red-300 break-all">{l}</div>
+                    <div key={i} className="text-alert-400 break-all">{l}</div>
                   ))}
                 </div>
               </div>
@@ -281,7 +281,7 @@ export default function HistoryDetail() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
                 <div className="text-xs text-gray-500 mb-1"><FileZipOutlined className="mr-1" />產物大小</div>
-                <div className="text-lg font-semibold text-cyan-300">{record.result.artifact.size_human}</div>
+                <div className="text-lg font-semibold text-cyber-300">{record.result.artifact.size_human}</div>
               </div>
               <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
                 <div className="text-xs text-gray-500 mb-1">檔案數</div>
@@ -292,7 +292,7 @@ export default function HistoryDetail() {
                   <div className="text-xs text-gray-500 mb-1">SHA-256(主執行檔)</div>
                   <Tooltip title="點擊複製完整雜湊值">
                     <code
-                      className="text-xs text-gray-300 font-mono break-all cursor-pointer hover:text-cyan-300"
+                      className="text-xs text-gray-300 font-mono break-all cursor-pointer hover:text-cyber-300"
                       onClick={() => copyToClipboard(record.result?.artifact?.sha256 || '')}
                     >
                       {record.result.artifact.sha256.slice(0, 32)}…
@@ -365,7 +365,7 @@ export default function HistoryDetail() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">耗時</span>
-                <span className="text-cyan-400 font-mono text-xs">
+                <span className="text-cyber-400 font-mono text-xs">
                   {formatDuration(record.start_time, record.end_time)}
                 </span>
               </div>
@@ -402,7 +402,7 @@ export default function HistoryDetail() {
                   style={{
                     background: 'rgba(6, 182, 212, 0.1)',
                     borderColor: 'rgba(6, 182, 212, 0.3)',
-                    color: '#22d3ee',
+                    color: '#f09a5e',
                   }}
                 >
                   重新打包
@@ -494,7 +494,7 @@ export default function HistoryDetail() {
                   {config.source_type === 'git' ? (
                     <>
                       <Descriptions.Item label="來源" span={2}>
-                        <span style={{ color: '#67e8f9' }}>Git URL</span>
+                        <span style={{ color: '#f6b584' }}>Git URL</span>
                       </Descriptions.Item>
                       <Descriptions.Item label="Git 網址" span={2}>
                         <code style={{ fontSize: 12, color: '#93c5fd' }}>{config.git_url}</code>
@@ -525,7 +525,7 @@ export default function HistoryDetail() {
                 {(config.project_type === 'backend_only' || config.project_type === 'fullstack') && (
                   <>
                     <div className="border-t border-white/5 pt-3">
-                      <h4 className="text-xs font-medium text-cyan-500 uppercase tracking-wider mb-3">
+                      <h4 className="text-xs font-medium text-cyber-500 uppercase tracking-wider mb-3">
                         <CloudServerOutlined className="mr-1" /> Backend
                       </h4>
                       <Descriptions
@@ -569,7 +569,7 @@ export default function HistoryDetail() {
                 {/* Frontend Settings */}
                 {(config.project_type === 'frontend_only' || config.project_type === 'fullstack') && (
                   <div className="border-t border-white/5 pt-3">
-                    <h4 className="text-xs font-medium text-green-500 uppercase tracking-wider mb-3">
+                    <h4 className="text-xs font-medium text-matrix-500 uppercase tracking-wider mb-3">
                       <DesktopOutlined className="mr-1" /> Frontend
                     </h4>
                     <Descriptions

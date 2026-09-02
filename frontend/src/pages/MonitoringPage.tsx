@@ -7,7 +7,7 @@ import { getErrorDetail } from '../utils/errors'
 
 // ── htop-style color scheme ──
 const CORE_COLORS = [
-  '#06b6d4', '#8b5cf6', '#f59e0b', '#10b981',
+  '#de7c3e', '#8b5cf6', '#f59e0b', '#10b981',
   '#ef4444', '#3b82f6', '#ec4899', '#14b8a6',
   '#f97316', '#6366f1', '#84cc16', '#a855f7',
   '#e11d48', '#0ea5e9', '#22c55e', '#d946ef',
@@ -223,7 +223,7 @@ export default function MonitoringPage() {
     >
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, borderBottom: '1px solid #1a2030', paddingBottom: 6 }}>
-        <span style={{ color: '#06b6d4', fontWeight: 'bold' }}>系統監控</span>
+        <span style={{ color: '#de7c3e', fontWeight: 'bold' }}>系統監控</span>
         <span style={{ color: '#555' }}>更新頻率：2 秒 | {new Date().toLocaleTimeString()}</span>
       </div>
 
@@ -369,7 +369,7 @@ export default function MonitoringPage() {
             const tempStatus = gpu.temperature > 80 ? { glyph: '▲', label: '過熱' } : gpu.temperature > 60 ? { glyph: '△', label: '偏高' } : { glyph: '●', label: '正常' }
             return (
               <div key={gpu.id}>
-                <div style={{ color: '#06b6d4', marginBottom: 2 }}>GPU{gpu.id}：{gpu.name}</div>
+                <div style={{ color: '#de7c3e', marginBottom: 2 }}>GPU{gpu.id}：{gpu.name}</div>
                 <div style={{ display: 'flex', gap: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 20 }}>
                     <span style={{ color: '#555', width: 40 }}>負載</span>
@@ -414,7 +414,7 @@ export default function MonitoringPage() {
         <div style={{ background: '#0d1117', borderRadius: 4, padding: '4px 8px', marginBottom: 8 }}>
           <Sparkline
             data={overallHistory}
-            color="#06b6d4"
+            color="#de7c3e"
             height={40}
             label={`CPU 整體使用率趨勢圖，目前 ${stats.cpu.percent.toFixed(1)}%`}
           />
@@ -449,7 +449,7 @@ export default function MonitoringPage() {
         <span>
           網路：<span style={{ color: '#10b981' }}>▲ 上傳 {formatBytes(netRateRef.current.sent)}/s</span>
           {' '}
-          <span style={{ color: '#06b6d4' }}>▼ 下載 {formatBytes(netRateRef.current.recv)}/s</span>
+          <span style={{ color: '#de7c3e' }}>▼ 下載 {formatBytes(netRateRef.current.recv)}/s</span>
         </span>
         <span>{uptimeLabel}</span>
       </div>

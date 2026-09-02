@@ -22,7 +22,7 @@ export interface StatusMeta {
 
 export const STATUS_META: Record<TaskStatus, StatusMeta> = {
   pending: { color: '#9ca3af', bgColor: 'rgba(156,163,175,0.15)', label: '等待中', icon: <ClockCircleOutlined /> },
-  running: { color: '#22d3ee', bgColor: 'rgba(6,182,212,0.15)', label: '執行中', icon: <SyncOutlined spin /> },
+  running: { color: '#f09a5e', bgColor: 'rgba(6,182,212,0.15)', label: '執行中', icon: <SyncOutlined spin /> },
   completed: { color: '#4ade80', bgColor: 'rgba(34,197,94,0.15)', label: '已完成', icon: <CheckCircleOutlined /> },
   failed: { color: '#f87171', bgColor: 'rgba(239,68,68,0.15)', label: '失敗', icon: <CloseCircleOutlined /> },
   cancelled: { color: '#fbbf24', bgColor: 'rgba(245,158,11,0.15)', label: '已取消', icon: <StopOutlined /> },

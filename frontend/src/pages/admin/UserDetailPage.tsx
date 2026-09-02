@@ -168,14 +168,14 @@ export default function UserDetailPage() {
       dataIndex: 'failure_reason',
       key: 'failure_reason',
       render: (reason: string | null) =>
-        reason ? <span className="text-red-400">{reason}</span> : '-',
+        reason ? <span className="text-alert-400">{reason}</span> : '-',
     },
   ]
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spin indicator={<LoadingOutlined className="text-cyan-400 text-3xl" />} />
+        <Spin indicator={<LoadingOutlined className="text-cyber-400 text-3xl" />} />
       </div>
     )
   }
@@ -324,7 +324,7 @@ export default function UserDetailPage() {
       <div className="mb-6">
         <Link
           to="/admin/users"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-cyan-400 transition-colors mb-4"
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-400 transition-colors mb-4"
         >
           <ArrowLeftOutlined />
           返回使用者列表
@@ -350,8 +350,8 @@ export default function UserDetailPage() {
                 onClick={() => handleStatusChange(!user.is_active)}
                 className={`px-4 py-2 rounded-lg border transition-colors ${
                   user.is_active
-                    ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-                    : 'border-green-500/30 text-green-400 hover:bg-green-500/10'
+                    ? 'border-alert-500/30 text-alert-400 hover:bg-alert-500/10'
+                    : 'border-matrix-500/30 text-matrix-400 hover:bg-matrix-500/10'
                 }`}
               >
                 {user.is_active ? '停用' : '啟用'}

@@ -1,47 +1,67 @@
-/* Google Fonts - must be first */
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Google Fonts - must be first.
+   Foundry identity: Archivo (industrial signage display), IBM Plex Sans
+   (engineering-heritage body), IBM Plex Mono (logs / ids / ports). */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 @import "tailwindcss";
 
-/* Cyber Theme - Command Center Style */
+/* =========================================================================
+   "Foundry" theme — a control room for a software machine shop.
+   Warm graphite (brushed gunmetal) ground; a hot/cold accent pair —
+   ember/copper (the heat of compilation) and steel-blue (cold, idle);
+   patina green for success (aged copper). Token NAMES are kept so the few
+   Tailwind utilities and shared classes keep working; only values change.
+   ========================================================================= */
 @theme {
-  /* Void - Dark backgrounds */
-  --color-void-950: #030507;
-  --color-void-900: #0a0e17;
-  --color-void-800: #111827;
-  --color-void-700: #1a2332;
-  --color-void-600: #243044;
+  /* Void → warm graphite / brushed steel surfaces (darkest → raised) */
+  --color-void-950: #14110d;
+  --color-void-900: #1b1712;
+  --color-void-800: #241e17;
+  --color-void-700: #322a20;
+  --color-void-600: #3f3527;
 
-  /* Cyber - Primary cyan */
-  --color-cyber-500: #06b6d4;
-  --color-cyber-600: #0891b2;
-  --color-cyber-400: #22d3ee;
-  --color-cyber-300: #67e8f9;
+  /* Cyber → ember / molten copper (primary, brand, running builds) */
+  --color-cyber-600: #c6692f;
+  --color-cyber-500: #de7c3e;
+  --color-cyber-400: #f09a5e;
+  --color-cyber-300: #f6b584;
+  --color-cyber-200: #fbd0ad;
 
-  /* Matrix - Success green */
-  --color-matrix-500: #22c55e;
-  --color-matrix-400: #4ade80;
+  /* Steel → the cold half of the pair (idle, info, structure) */
+  --color-steel-500: #5c86a2;
+  --color-steel-400: #7ba0b8;
 
-  /* Alert - Error red */
-  --color-alert-500: #ef4444;
-  --color-alert-400: #f87171;
+  /* Matrix → patina / verdigris (aged copper) for success */
+  --color-matrix-500: #4fa98a;
+  --color-matrix-400: #6fbfa1;
 
-  /* Signal - Warning amber */
-  --color-signal-500: #f59e0b;
-  --color-signal-400: #fbbf24;
+  /* Alert → warm signal red for failures */
+  --color-alert-500: #e0544a;
+  --color-alert-400: #ee7167;
+
+  /* Signal → amber for warnings / cancelled */
+  --color-signal-500: #dfa53a;
+  --color-signal-400: #edbb5e;
 
   /* Fonts */
-  --font-display: 'Sora', system-ui, sans-serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
 }
 
-/* Base styles */
+/* Warm text ramp + machined seams (referenced throughout) */
 :root {
+  --ink: #ece4d8;         /* warm off-white */
+  --ink-muted: #a99c8a;
+  --ink-faint: #6e6355;
+  --seam: rgba(236, 228, 216, 0.08);   /* hairline between panel and ground */
+  --seam-strong: rgba(236, 228, 216, 0.14);
+  --top-sheen: rgba(255, 246, 236, 0.05); /* brushed-metal top highlight */
+
   font-family: var(--font-body);
-  line-height: 1.5;
+  line-height: 1.55;
   font-weight: 400;
-  color: #e5e7eb;
+  color: var(--ink);
   background: var(--color-void-950);
 }
 
@@ -49,506 +69,280 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  /* A faint forge-glow at the top, over warm graphite — no cyan halo. */
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(6, 182, 212, 0.15), transparent),
-    linear-gradient(to bottom, var(--color-void-950), var(--color-void-900));
+    radial-gradient(120% 60% at 50% -10%, rgba(222, 124, 62, 0.10), transparent 60%),
+    linear-gradient(to bottom, var(--color-void-950), #100d0a);
   background-attachment: fixed;
 }
 
-#root {
-  min-height: 100vh;
-}
+#root { min-height: 100vh; }
 
-/* Glass Card */
+/* Headings wear the industrial display face by default. */
+h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+/* -------------------------------------------------------------------------
+   Panels — solid brushed steel, not glassmorphism. A crisp warm seam and a
+   thin top sheen read as a machined metal plate under low light.
+   ------------------------------------------------------------------------- */
 .glass-card {
-  background: linear-gradient(135deg, rgba(17, 24, 39, 0.8), rgba(10, 14, 23, 0.9));
-  border: 1px solid rgba(6, 182, 212, 0.2);
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s ease;
+  background: linear-gradient(180deg, #221c15, #1a1610);
+  border: 1px solid var(--seam);
+  border-top-color: var(--top-sheen);
+  border-radius: 6px;
+  box-shadow: 0 1px 0 var(--top-sheen) inset, 0 10px 28px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-
 .glass-card:hover {
-  border-color: rgba(6, 182, 212, 0.4);
-  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.1);
+  border-color: var(--seam-strong);
+  box-shadow: 0 1px 0 var(--top-sheen) inset, 0 12px 34px rgba(0, 0, 0, 0.5);
 }
 
-/* Cyber Button */
+.stat-card {
+  background: linear-gradient(180deg, #221c15, #1a1610);
+  border: 1px solid var(--seam);
+  border-top-color: var(--top-sheen);
+  border-radius: 6px;
+  padding: 20px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+  border-color: rgba(222, 124, 62, 0.35);
+  box-shadow: 0 0 0 1px rgba(222, 124, 62, 0.12);
+}
+
+/* -------------------------------------------------------------------------
+   Buttons — the primary action is struck in hot copper.
+   ------------------------------------------------------------------------- */
 .btn-cyber {
-  background: linear-gradient(135deg, var(--color-cyber-600), var(--color-cyber-500));
-  color: white;
-  border: none;
-  padding: 10px 24px;
-  border-radius: 8px;
+  background: linear-gradient(180deg, var(--color-cyber-500), var(--color-cyber-600));
+  color: #1a0f06;
+  border: 1px solid rgba(255, 210, 170, 0.25);
+  padding: 10px 22px;
+  border-radius: 5px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 1px 0 rgba(255, 224, 196, 0.35) inset, 0 6px 16px rgba(198, 105, 47, 0.3);
+}
+.btn-cyber:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 1px 0 rgba(255, 224, 196, 0.4) inset, 0 8px 22px rgba(198, 105, 47, 0.4); }
+.btn-cyber:active { transform: translateY(0) scale(0.99); }
+.btn-cyber:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-cyber-300);
+  border: 1px solid rgba(222, 124, 62, 0.4);
+  padding: 10px 22px;
+  border-radius: 5px;
   font-family: var(--font-display);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
+.btn-ghost:hover { background: rgba(222, 124, 62, 0.1); border-color: var(--color-cyber-400); }
 
-.btn-cyber:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
-}
-
-.btn-cyber:active {
-  transform: scale(0.98);
-}
-
-.btn-cyber:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Ghost Button */
-.btn-ghost {
-  background: transparent;
-  color: var(--color-cyber-400);
-  border: 1px solid var(--color-cyber-500);
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-family: var(--font-display);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-ghost:hover {
-  background: rgba(6, 182, 212, 0.1);
-  border-color: var(--color-cyber-400);
-}
-
-/* Danger Button */
 .btn-danger {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(224, 84, 74, 0.1);
   color: var(--color-alert-400);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  padding: 10px 24px;
-  border-radius: 8px;
+  border: 1px solid rgba(224, 84, 74, 0.35);
+  padding: 10px 22px;
+  border-radius: 5px;
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
+.btn-danger:hover { background: rgba(224, 84, 74, 0.2); border-color: var(--color-alert-500); }
 
-.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: var(--color-alert-500);
-}
-
-/* Input Field */
+/* -------------------------------------------------------------------------
+   Inputs — recessed slots in the steel panel.
+   ------------------------------------------------------------------------- */
 .input-field {
-  background: var(--color-void-800);
-  border: 1px solid var(--color-void-600);
-  color: #e5e7eb;
-  padding: 12px 16px;
-  border-radius: 8px;
+  background: #16120d;
+  border: 1px solid var(--color-void-700);
+  color: var(--ink);
+  padding: 11px 14px;
+  border-radius: 5px;
   font-family: var(--font-body);
   font-size: 14px;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   width: 100%;
 }
-
 .input-field:focus {
   outline: none;
   border-color: var(--color-cyber-500);
-  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+  box-shadow: 0 0 0 3px rgba(222, 124, 62, 0.15);
 }
+.input-field::placeholder { color: var(--ink-faint); }
 
-.input-field::placeholder {
-  color: #6b7280;
-}
-
-/* Status Badges */
+/* -------------------------------------------------------------------------
+   Status — squared machine indicators with an LED dot. Running glows ember
+   like hot metal.
+   ------------------------------------------------------------------------- */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--font-display);
+  gap: 7px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
 }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+.badge-pending   { background: rgba(169, 156, 138, 0.12); color: var(--ink-muted); border: 1px solid rgba(169, 156, 138, 0.25); }
+.badge-running   { background: rgba(222, 124, 62, 0.14); color: var(--color-cyber-400); border: 1px solid rgba(222, 124, 62, 0.35); }
+.badge-running::before { animation: forge-pulse 1.4s ease-in-out infinite; }
+.badge-completed { background: rgba(79, 169, 138, 0.14); color: var(--color-matrix-400); border: 1px solid rgba(79, 169, 138, 0.32); }
+.badge-failed    { background: rgba(224, 84, 74, 0.14); color: var(--color-alert-400); border: 1px solid rgba(224, 84, 74, 0.32); }
+.badge-cancelled { background: rgba(223, 165, 58, 0.14); color: var(--color-signal-400); border: 1px solid rgba(223, 165, 58, 0.32); }
 
-.badge-pending {
-  background: rgba(107, 114, 128, 0.2);
-  color: #9ca3af;
-  border: 1px solid rgba(107, 114, 128, 0.3);
-}
-
-.badge-running {
-  background: rgba(6, 182, 212, 0.15);
-  color: var(--color-cyber-400);
-  border: 1px solid rgba(6, 182, 212, 0.3);
-}
-
-.badge-completed {
-  background: rgba(34, 197, 94, 0.15);
-  color: var(--color-matrix-400);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-}
-
-.badge-failed {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--color-alert-400);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.badge-cancelled {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--color-signal-400);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-/* Navigation */
+/* -------------------------------------------------------------------------
+   Navigation — a control-panel rail; the active tool is marked in ember.
+   ------------------------------------------------------------------------- */
 .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  color: #9ca3af;
+  padding: 11px 14px;
+  border-radius: 5px;
+  color: var(--ink-muted);
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
   text-decoration: none;
+  border-left: 2px solid transparent;
 }
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #e5e7eb;
-}
-
+.nav-item:hover { background: rgba(236, 228, 216, 0.04); color: var(--ink); }
 .nav-item.active {
-  background: rgba(6, 182, 212, 0.15);
-  color: var(--color-cyber-400);
-  border-left: 3px solid var(--color-cyber-500);
+  background: rgba(222, 124, 62, 0.12);
+  color: var(--color-cyber-300);
+  border-left-color: var(--color-cyber-500);
 }
 
-/* Stat Card */
-.stat-card {
-  background: linear-gradient(135deg, rgba(17, 24, 39, 0.6), rgba(10, 14, 23, 0.8));
-  border: 1px solid rgba(6, 182, 212, 0.15);
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-  border-color: rgba(6, 182, 212, 0.3);
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.1);
-}
-
-/* Log viewer styles */
+/* -------------------------------------------------------------------------
+   Log viewer — a machined terminal readout.
+   ------------------------------------------------------------------------- */
 .log-viewer {
   font-family: var(--font-mono);
   font-size: 13px;
-  line-height: 1.5;
-  background: var(--color-void-950);
-  border: 1px solid var(--color-void-600);
-  border-radius: 8px;
+  line-height: 1.6;
+  background: #100d09;
+  border: 1px solid var(--color-void-700);
+  border-radius: 6px;
 }
+.log-line { padding: 2px 14px; white-space: pre-wrap; word-break: break-word; border-bottom: 1px solid rgba(236, 228, 216, 0.03); }
+.log-line:hover { background: rgba(222, 124, 62, 0.05); }
 
-.log-line {
-  padding: 2px 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-.log-line:hover {
-  background: rgba(6, 182, 212, 0.05);
-}
-
-/* Table styles */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
+/* Data tables */
+.data-table { width: 100%; border-collapse: collapse; }
 .data-table th {
-  text-align: left;
-  padding: 12px 16px;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
-  border-bottom: 1px solid var(--color-void-600);
+  text-align: left; padding: 12px 16px;
+  font-family: var(--font-mono); font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint);
+  border-bottom: 1px solid var(--color-void-700);
+}
+.data-table td { padding: 16px; border-bottom: 1px solid var(--seam); color: var(--ink); }
+.data-table tr:hover td { background: rgba(222, 124, 62, 0.03); }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: var(--color-void-900); }
+::-webkit-scrollbar-thumb { background: var(--color-void-600); border-radius: 5px; border: 2px solid var(--color-void-900); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-cyber-600); }
+
+/* Animations — heat, not neon. */
+@keyframes forge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 4px rgba(222, 124, 62, 0.5); } 50% { box-shadow: 0 0 18px rgba(222, 124, 62, 0.85); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-spin { animation: spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-glow, .animate-spin, .badge-running::before { animation: none !important; }
+  * { transition: none !important; }
 }
 
-.data-table td {
-  padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: #e5e7eb;
-}
+/* -------------------------------------------------------------------------
+   Ant Design overrides — bind antd's chrome to the Foundry tokens.
+   ------------------------------------------------------------------------- */
+.ant-card { background: transparent !important; border: none !important; }
+.ant-menu { background: transparent !important; }
+.ant-menu-item { color: var(--ink-muted) !important; }
+.ant-menu-item:hover { color: var(--ink) !important; background: rgba(236, 228, 216, 0.04) !important; }
+.ant-menu-item-selected { background: rgba(222, 124, 62, 0.12) !important; color: var(--color-cyber-300) !important; }
 
-.data-table tr:hover td {
-  background: rgba(6, 182, 212, 0.03);
-}
+.ant-progress-bg { background: linear-gradient(90deg, var(--color-cyber-600), var(--color-cyber-400)) !important; }
+.ant-progress-inner { background: var(--color-void-700) !important; }
 
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-picker, .ant-input-number {
+  background: #16120d !important; border-color: var(--color-void-700) !important; color: var(--ink) !important;
 }
-
-::-webkit-scrollbar-track {
-  background: var(--color-void-900);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-void-600);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-void-700);
-}
-
-/* Animations */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(6, 182, 212, 0.5); }
-  50% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.8); }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Override Ant Design styles for dark theme */
-.ant-card {
-  background: transparent !important;
-  border: none !important;
-}
-
-.ant-menu {
-  background: transparent !important;
-}
-
-.ant-menu-item {
-  color: #9ca3af !important;
-}
-
-.ant-menu-item:hover {
-  color: #e5e7eb !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-}
-
-.ant-menu-item-selected {
-  background: rgba(6, 182, 212, 0.15) !important;
-  color: var(--color-cyber-400) !important;
-}
-
-.ant-progress-bg {
-  background: linear-gradient(90deg, var(--color-cyber-600), var(--color-cyber-400)) !important;
-}
-
-.ant-progress-inner {
-  background: var(--color-void-700) !important;
-}
-
-.ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-picker {
-  background: var(--color-void-800) !important;
-  border-color: var(--color-void-600) !important;
-  color: #e5e7eb !important;
-}
-
 .ant-input:focus, .ant-input-affix-wrapper:focus, .ant-input-affix-wrapper-focused {
-  border-color: var(--color-cyber-500) !important;
-  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1) !important;
+  border-color: var(--color-cyber-500) !important; box-shadow: 0 0 0 2px rgba(222, 124, 62, 0.15) !important;
 }
-
-.ant-select-dropdown, .ant-picker-dropdown {
-  background: var(--color-void-800) !important;
-  border: 1px solid var(--color-void-600) !important;
-}
-
-.ant-select-item {
-  color: #e5e7eb !important;
-}
-
-.ant-select-item-option-active {
-  background: rgba(6, 182, 212, 0.1) !important;
-}
-
-.ant-select-item-option-selected {
-  background: rgba(6, 182, 212, 0.2) !important;
-}
+.ant-select-dropdown, .ant-picker-dropdown { background: var(--color-void-800) !important; border: 1px solid var(--color-void-700) !important; }
+.ant-select-item { color: var(--ink) !important; }
+.ant-select-item-option-active { background: rgba(222, 124, 62, 0.1) !important; }
+.ant-select-item-option-selected { background: rgba(222, 124, 62, 0.2) !important; }
 
 .ant-btn-primary {
-  background: linear-gradient(135deg, var(--color-cyber-600), var(--color-cyber-500)) !important;
-  border: none !important;
-  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3) !important;
+  background: linear-gradient(180deg, var(--color-cyber-500), var(--color-cyber-600)) !important;
+  border: 1px solid rgba(255, 210, 170, 0.25) !important; color: #1a0f06 !important; font-weight: 700 !important;
+  box-shadow: 0 1px 0 rgba(255, 224, 196, 0.3) inset, 0 4px 12px rgba(198, 105, 47, 0.3) !important;
 }
+.ant-btn-primary:hover { filter: brightness(1.05); box-shadow: 0 1px 0 rgba(255, 224, 196, 0.35) inset, 0 6px 18px rgba(198, 105, 47, 0.4) !important; }
+.ant-btn-default { background: transparent !important; border-color: var(--color-void-600) !important; color: var(--ink) !important; }
+.ant-btn-default:hover { border-color: var(--color-cyber-500) !important; color: var(--color-cyber-300) !important; }
+.ant-btn-dangerous { color: var(--color-alert-400) !important; border-color: rgba(224, 84, 74, 0.4) !important; }
 
-.ant-btn-primary:hover {
-  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4) !important;
-}
-
-.ant-btn-default {
-  background: transparent !important;
-  border-color: var(--color-void-600) !important;
-  color: #e5e7eb !important;
-}
-
-.ant-btn-default:hover {
-  border-color: var(--color-cyber-500) !important;
-  color: var(--color-cyber-400) !important;
-}
-
-.ant-table {
-  background: transparent !important;
-}
-
+.ant-table { background: transparent !important; }
 .ant-table-thead > tr > th {
-  background: var(--color-void-800) !important;
-  color: #9ca3af !important;
-  border-bottom: 1px solid var(--color-void-600) !important;
+  background: var(--color-void-800) !important; color: var(--ink-muted) !important;
+  border-bottom: 1px solid var(--color-void-700) !important;
+  font-family: var(--font-mono) !important; font-size: 12px !important; letter-spacing: 0.04em !important;
 }
+.ant-table-tbody > tr > td { background: transparent !important; color: var(--ink) !important; border-bottom: 1px solid var(--seam) !important; }
+.ant-table-tbody > tr:hover > td { background: rgba(222, 124, 62, 0.03) !important; }
 
-.ant-table-tbody > tr > td {
-  background: transparent !important;
-  color: #e5e7eb !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
+.ant-pagination-item { background: var(--color-void-800) !important; border-color: var(--color-void-700) !important; }
+.ant-pagination-item a { color: var(--ink) !important; }
+.ant-pagination-item-active { border-color: var(--color-cyber-500) !important; }
+.ant-pagination-item-active a { color: var(--color-cyber-300) !important; }
 
-.ant-table-tbody > tr:hover > td {
-  background: rgba(6, 182, 212, 0.03) !important;
-}
+.ant-empty-description { color: var(--ink-faint) !important; }
+.ant-form-item-label > label { color: var(--ink-muted) !important; }
+.ant-switch { background: var(--color-void-600) !important; }
+.ant-switch-checked { background: var(--color-cyber-500) !important; }
+.ant-message-notice-content { background: var(--color-void-800) !important; border: 1px solid var(--color-void-700) !important; color: var(--ink) !important; }
+.ant-spin-dot-item { background: var(--color-cyber-500) !important; }
+.ant-descriptions-item-label { color: var(--ink-faint) !important; }
+.ant-descriptions-item-content { color: var(--ink) !important; }
+.ant-tag { border-radius: 4px !important; font-family: var(--font-mono) !important; }
 
-.ant-pagination-item {
-  background: var(--color-void-800) !important;
-  border-color: var(--color-void-600) !important;
-}
+.ant-modal-content { background: var(--color-void-800) !important; border: 1px solid var(--color-void-700) !important; }
+.ant-modal-header { background: var(--color-void-800) !important; border-bottom: 1px solid var(--color-void-700) !important; }
+.ant-modal-title { color: var(--ink) !important; font-family: var(--font-display) !important; }
+.ant-modal-close { color: var(--ink-faint) !important; }
+.ant-modal-close:hover { color: var(--ink) !important; }
+.ant-modal-body { color: var(--ink) !important; }
+.ant-modal-footer { background: var(--color-void-800) !important; border-top: 1px solid var(--color-void-700) !important; }
+.ant-modal-confirm-content { color: var(--ink-muted) !important; }
+.ant-modal-confirm-title { color: var(--ink) !important; }
 
-.ant-pagination-item a {
-  color: #e5e7eb !important;
-}
+.ant-checkbox-wrapper { color: var(--ink-muted) !important; }
+.ant-checkbox-inner { background: var(--color-void-700) !important; border-color: var(--color-void-600) !important; }
+.ant-checkbox-checked .ant-checkbox-inner { background: var(--color-cyber-500) !important; border-color: var(--color-cyber-500) !important; }
 
-.ant-pagination-item-active {
-  border-color: var(--color-cyber-500) !important;
-}
+.ant-form-item-explain-error { color: var(--color-alert-400) !important; }
+.ant-input-textarea textarea { background: #16120d !important; color: var(--ink) !important; }
 
-.ant-pagination-item-active a {
-  color: var(--color-cyber-400) !important;
-}
-
-.ant-empty-description {
-  color: #6b7280 !important;
-}
-
-.ant-form-item-label > label {
-  color: #9ca3af !important;
-}
-
-.ant-switch {
-  background: var(--color-void-600) !important;
-}
-
-.ant-switch-checked {
-  background: var(--color-cyber-500) !important;
-}
-
-.ant-message-notice-content {
-  background: var(--color-void-800) !important;
-  border: 1px solid var(--color-void-600) !important;
-  color: #e5e7eb !important;
-}
-
-.ant-spin-dot-item {
-  background: var(--color-cyber-500) !important;
-}
-
-.ant-descriptions-item-label {
-  color: #6b7280 !important;
-}
-
-.ant-descriptions-item-content {
-  color: #e5e7eb !important;
-}
-
-.ant-tag {
-  border-radius: 20px !important;
-}
-
-/* Dark Modal styles */
-.ant-modal-content {
-  background: var(--color-void-800) !important;
-  border: 1px solid var(--color-void-600) !important;
-}
-
-.ant-modal-header {
-  background: var(--color-void-800) !important;
-  border-bottom: 1px solid var(--color-void-600) !important;
-}
-
-.ant-modal-title {
-  color: #e5e7eb !important;
-}
-
-.ant-modal-close {
-  color: #6b7280 !important;
-}
-
-.ant-modal-close:hover {
-  color: #e5e7eb !important;
-}
-
-.ant-modal-body {
-  color: #e5e7eb !important;
-}
-
-.ant-modal-footer {
-  background: var(--color-void-800) !important;
-  border-top: 1px solid var(--color-void-600) !important;
-}
-
-.ant-modal-confirm-content {
-  color: #9ca3af !important;
-}
-
-.ant-modal-confirm-title {
-  color: #e5e7eb !important;
-}
-
-/* Checkbox dark styles */
-.ant-checkbox-wrapper {
-  color: #9ca3af !important;
-}
-
-.ant-checkbox-inner {
-  background: var(--color-void-700) !important;
-  border-color: var(--color-void-600) !important;
-}
-
-.ant-checkbox-checked .ant-checkbox-inner {
-  background: var(--color-cyber-500) !important;
-  border-color: var(--color-cyber-500) !important;
-}
-
-/* Form item dark styles */
-.ant-form-item-explain-error {
-  color: var(--color-alert-400) !important;
-}
-
-/* TextArea dark styles */
-.ant-input-textarea textarea {
-  background: var(--color-void-800) !important;
-  color: #e5e7eb !important;
-}
+.ant-radio-button-wrapper-checked { background: rgba(222, 124, 62, 0.15) !important; border-color: var(--color-cyber-500) !important; color: var(--color-cyber-300) !important; }
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn { color: var(--color-cyber-300) !important; }
+.ant-tabs-ink-bar { background: var(--color-cyber-500) !important; }
