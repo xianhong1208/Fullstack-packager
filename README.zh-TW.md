@@ -25,17 +25,16 @@ cd frontend && npm install && npm run build && cd ..
 cp .env.example .env          # 再填入你的 PostgreSQL DB_*
 ```
 
-建立資料庫並套用 migration:
+建立資料庫(migration 由程式在啟動時自動套用):
 
 ```bash
 createdb build_center         # 或把 DB_NAME 設成與 .env 一致
-uv run alembic upgrade head
 ```
 
 ## 快速開始
 
 ```bash
-uv run python main.py         # http://0.0.0.0:5018
+uv run python main.py         # 先套用 migration,再於 http://0.0.0.0:5018 提供服務
 ```
 
 - 開啟 `http://localhost:5018`。你建立的第一個帳號即為管理員。
@@ -64,7 +63,7 @@ uv run python main.py         # http://0.0.0.0:5018
 
 ## 設定
 
-全部由環境變數驅動;[`.env.example`](.env.example) 記錄每個變數,最重要的幾個:
+全部由環境變數驅動。`.env.example` 只列必填,完整清單與預設值見 `app/config.py`。最重要的幾個:
 
 | 變數 | 預設 | 說明 |
 |---|---|---|

@@ -1,9 +1,26 @@
 """Entry point for running the server directly with: uv run python main.py"""
 
+import sys
+from pathlib import Path
+
 import uvicorn
 from app.config import get_settings
 
 settings = get_settings()
+
+
+def run_migrations() -> None:
+    """Bring the database schema up to date (alembic upgrade head) on startup.
+
+    Runs here, before the server starts, so `uv run python main.py` just works on a
+    fresh database — no separate `alembic upgrade head` step. Alembic's env.py reads
+    the connection from the same settings, so nothing extra is configured here.
+    """
+    from alembic import command
+    from alembic.config import Config
+
+    cfg = Config(str(Path(__file__).resolve().parent / "alembic.ini"))
+    command.upgrade(cfg, "head")
 
 LOGO = r"""
 [36m
@@ -35,6 +52,15 @@ UVICORN_KWARGS: dict = {
 
 if __name__ == "__main__":
     print(LOGO.replace("[36m", "\033[36m").replace("[0m", "\033[0m").replace("[90m", "\033[90m"))
+
+    try:
+        print("\033[90m  Applying database migrations...\033[0m")
+        run_migrations()
+    except Exception as exc:  # noqa: BLE001 - surface any DB/migration error clearly and stop
+        print(f"\033[31m  Migration failed: {exc}\033[0m")
+        print("\033[31m  Check the database connection (DB_* in .env) and try again.\033[0m")
+        sys.exit(1)
+
     print(f"\033[32m  Starting server at http://{settings.host}:{settings.port}\033[0m")
     print()
 

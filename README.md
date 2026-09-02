@@ -25,17 +25,16 @@ cd frontend && npm install && npm run build && cd ..
 cp .env.example .env          # then set DB_* for your PostgreSQL
 ```
 
-Create the database and apply migrations:
+Create the database (the app applies migrations itself on startup):
 
 ```bash
 createdb build_center         # or set DB_NAME to match your .env
-uv run alembic upgrade head
 ```
 
 ## Quick start
 
 ```bash
-uv run python main.py         # http://0.0.0.0:5018
+uv run python main.py         # applies migrations, then serves on http://0.0.0.0:5018
 ```
 
 - Open `http://localhost:5018`. The first account you create becomes the administrator.
@@ -64,7 +63,7 @@ Console (React + antd)  ──HTTP / WebSocket──▶  FastAPI
 
 ## Configuration
 
-Everything is environment-driven; [`.env.example`](.env.example) documents every variable. The most important ones:
+Everything is environment-driven. `.env.example` lists the essentials; `app/config.py` has the full set with defaults. The most important ones:
 
 | Variable | Default | Description |
 |---|---|---|
