@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Box body - dark background -->
+  <path d="M8 24L32 12L56 24V48L32 60L8 48V24Z" fill="#0a0e17" stroke="#06b6d4" stroke-width="2"/>
+
+  <!-- Box top flaps -->
+  <path d="M8 24L32 36L56 24" stroke="#06b6d4" stroke-width="2" fill="none"/>
+  <path d="M32 36V60" stroke="#06b6d4" stroke-width="2"/>
+
+  <!-- Box lid - left flap -->
+  <path d="M8 24L20 18L32 24L20 30L8 24Z" fill="#111827" stroke="#22d3ee" stroke-width="1.5"/>
+
+  <!-- Box lid - right flap -->
+  <path d="M56 24L44 18L32 24L44 30L56 24Z" fill="#111827" stroke="#22d3ee" stroke-width="1.5"/>
+
+  <!-- Open flap effect - back -->
+  <path d="M20 18L32 6L44 18" stroke="#0891b2" stroke-width="2" fill="none"/>
+  <path d="M32 6V12" stroke="#0891b2" stroke-width="2"/>
+
+  <!-- Highlight lines on box -->
+  <path d="M14 28L14 44" stroke="#06b6d4" stroke-width="1" opacity="0.5"/>
+  <path d="M50 28L50 44" stroke="#06b6d4" stroke-width="1" opacity="0.5"/>
+
+  <!-- Glow effect -->
+  <ellipse cx="32" cy="60" rx="16" ry="4" fill="#06b6d4" opacity="0.1"/>
+</svg>

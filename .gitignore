@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.venv-py*/
+
+# Environment / secrets
+.env
+.env.local
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Build outputs
+dist/
+*.build/
+*.dist/
+*.onefile-build/
+nuitka-report.xml
+
+# Tooling
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.playwright-mcp/
+
+# Ad-hoc screenshots / scratch artifacts at repo root
+/*.png
+/*.jpg
+
+# Local DB backups (contain password hashes and user-pasted env content)
+build_center_backups/
+
+# Claude Code local config
+.claude/

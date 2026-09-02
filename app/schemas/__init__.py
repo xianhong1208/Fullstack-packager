@@ -1,0 +1,91 @@
+"""Pydantic schemas for API request/response models."""
+
+from app.schemas.task import (
+    BuildConfig,
+    TaskCreate,
+    TaskResponse,
+    TaskStatus,
+    TaskUpdate,
+    HistoryItem,
+    WebSocketMessage,
+)
+from app.schemas.user import (
+    UserBase,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    UserListResponse,
+    TokenResponse,
+    RefreshTokenRequest,
+    RefreshTokenResponse,
+    SecurityQuestionSet,
+    SecurityQuestionVerify,
+    PasswordChange,
+    PasswordReset,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    LoginHistoryResponse,
+    LoginHistoryList,
+    SessionResponse,
+    SessionList,
+    UserRoleUpdate,
+    UserStatusUpdate,
+    AdminPasswordReset,
+)
+from app.schemas.role import (
+    RoleBase,
+    RoleCreate,
+    RoleUpdate,
+    RoleResponse,
+    RoleSummary,
+    PermissionResponse,
+)
+from app.schemas.permission import (
+    PermissionBase,
+    PermissionCreate,
+    PermissionCategory,
+)
+
+__all__ = [
+    # Task schemas
+    "BuildConfig",
+    "TaskCreate",
+    "TaskResponse",
+    "TaskStatus",
+    "TaskUpdate",
+    "HistoryItem",
+    "WebSocketMessage",
+    # User schemas
+    "UserBase",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
+    "UserListResponse",
+    "TokenResponse",
+    "RefreshTokenRequest",
+    "RefreshTokenResponse",
+    "SecurityQuestionSet",
+    "SecurityQuestionVerify",
+    "PasswordChange",
+    "PasswordReset",
+    "ForgotPasswordRequest",
+    "ForgotPasswordResponse",
+    "LoginHistoryResponse",
+    "LoginHistoryList",
+    "SessionResponse",
+    "SessionList",
+    "UserRoleUpdate",
+    "UserStatusUpdate",
+    "AdminPasswordReset",
+    # Role schemas
+    "RoleBase",
+    "RoleCreate",
+    "RoleUpdate",
+    "RoleResponse",
+    "RoleSummary",
+    "PermissionResponse",
+    # Permission schemas
+    "PermissionBase",
+    "PermissionCreate",
+    "PermissionCategory",
+]

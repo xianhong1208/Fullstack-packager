@@ -1,0 +1,554 @@
+/* Google Fonts - must be first */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+/* Cyber Theme - Command Center Style */
+@theme {
+  /* Void - Dark backgrounds */
+  --color-void-950: #030507;
+  --color-void-900: #0a0e17;
+  --color-void-800: #111827;
+  --color-void-700: #1a2332;
+  --color-void-600: #243044;
+
+  /* Cyber - Primary cyan */
+  --color-cyber-500: #06b6d4;
+  --color-cyber-600: #0891b2;
+  --color-cyber-400: #22d3ee;
+  --color-cyber-300: #67e8f9;
+
+  /* Matrix - Success green */
+  --color-matrix-500: #22c55e;
+  --color-matrix-400: #4ade80;
+
+  /* Alert - Error red */
+  --color-alert-500: #ef4444;
+  --color-alert-400: #f87171;
+
+  /* Signal - Warning amber */
+  --color-signal-500: #f59e0b;
+  --color-signal-400: #fbbf24;
+
+  /* Fonts */
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Base styles */
+:root {
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-weight: 400;
+  color: #e5e7eb;
+  background: var(--color-void-950);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(6, 182, 212, 0.15), transparent),
+    linear-gradient(to bottom, var(--color-void-950), var(--color-void-900));
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Glass Card */
+.glass-card {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.8), rgba(10, 14, 23, 0.9));
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.1);
+}
+
+/* Cyber Button */
+.btn-cyber {
+  background: linear-gradient(135deg, var(--color-cyber-600), var(--color-cyber-500));
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.btn-cyber:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+}
+
+.btn-cyber:active {
+  transform: scale(0.98);
+}
+
+.btn-cyber:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--color-cyber-400);
+  border: 1px solid var(--color-cyber-500);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: var(--color-cyber-400);
+}
+
+/* Danger Button */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-alert-400);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--color-alert-500);
+}
+
+/* Input Field */
+.input-field {
+  background: var(--color-void-800);
+  border: 1px solid var(--color-void-600);
+  color: #e5e7eb;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-cyber-500);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.input-field::placeholder {
+  color: #6b7280;
+}
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-display);
+}
+
+.badge-pending {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.badge-running {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--color-cyber-400);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.badge-completed {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-matrix-400);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-alert-400);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-cancelled {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-signal-400);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Navigation */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #9ca3af;
+  font-family: var(--font-display);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e5e7eb;
+}
+
+.nav-item.active {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--color-cyber-400);
+  border-left: 3px solid var(--color-cyber-500);
+}
+
+/* Stat Card */
+.stat-card {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.6), rgba(10, 14, 23, 0.8));
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+/* Log viewer styles */
+.log-viewer {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--color-void-950);
+  border: 1px solid var(--color-void-600);
+  border-radius: 8px;
+}
+
+.log-line {
+  padding: 2px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.log-line:hover {
+  background: rgba(6, 182, 212, 0.05);
+}
+
+/* Table styles */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  border-bottom: 1px solid var(--color-void-600);
+}
+
+.data-table td {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e5e7eb;
+}
+
+.data-table tr:hover td {
+  background: rgba(6, 182, 212, 0.03);
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-void-900);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-void-600);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-void-700);
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(6, 182, 212, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.8); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Override Ant Design styles for dark theme */
+.ant-card {
+  background: transparent !important;
+  border: none !important;
+}
+
+.ant-menu {
+  background: transparent !important;
+}
+
+.ant-menu-item {
+  color: #9ca3af !important;
+}
+
+.ant-menu-item:hover {
+  color: #e5e7eb !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.ant-menu-item-selected {
+  background: rgba(6, 182, 212, 0.15) !important;
+  color: var(--color-cyber-400) !important;
+}
+
+.ant-progress-bg {
+  background: linear-gradient(90deg, var(--color-cyber-600), var(--color-cyber-400)) !important;
+}
+
+.ant-progress-inner {
+  background: var(--color-void-700) !important;
+}
+
+.ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-picker {
+  background: var(--color-void-800) !important;
+  border-color: var(--color-void-600) !important;
+  color: #e5e7eb !important;
+}
+
+.ant-input:focus, .ant-input-affix-wrapper:focus, .ant-input-affix-wrapper-focused {
+  border-color: var(--color-cyber-500) !important;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1) !important;
+}
+
+.ant-select-dropdown, .ant-picker-dropdown {
+  background: var(--color-void-800) !important;
+  border: 1px solid var(--color-void-600) !important;
+}
+
+.ant-select-item {
+  color: #e5e7eb !important;
+}
+
+.ant-select-item-option-active {
+  background: rgba(6, 182, 212, 0.1) !important;
+}
+
+.ant-select-item-option-selected {
+  background: rgba(6, 182, 212, 0.2) !important;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, var(--color-cyber-600), var(--color-cyber-500)) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3) !important;
+}
+
+.ant-btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4) !important;
+}
+
+.ant-btn-default {
+  background: transparent !important;
+  border-color: var(--color-void-600) !important;
+  color: #e5e7eb !important;
+}
+
+.ant-btn-default:hover {
+  border-color: var(--color-cyber-500) !important;
+  color: var(--color-cyber-400) !important;
+}
+
+.ant-table {
+  background: transparent !important;
+}
+
+.ant-table-thead > tr > th {
+  background: var(--color-void-800) !important;
+  color: #9ca3af !important;
+  border-bottom: 1px solid var(--color-void-600) !important;
+}
+
+.ant-table-tbody > tr > td {
+  background: transparent !important;
+  color: #e5e7eb !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: rgba(6, 182, 212, 0.03) !important;
+}
+
+.ant-pagination-item {
+  background: var(--color-void-800) !important;
+  border-color: var(--color-void-600) !important;
+}
+
+.ant-pagination-item a {
+  color: #e5e7eb !important;
+}
+
+.ant-pagination-item-active {
+  border-color: var(--color-cyber-500) !important;
+}
+
+.ant-pagination-item-active a {
+  color: var(--color-cyber-400) !important;
+}
+
+.ant-empty-description {
+  color: #6b7280 !important;
+}
+
+.ant-form-item-label > label {
+  color: #9ca3af !important;
+}
+
+.ant-switch {
+  background: var(--color-void-600) !important;
+}
+
+.ant-switch-checked {
+  background: var(--color-cyber-500) !important;
+}
+
+.ant-message-notice-content {
+  background: var(--color-void-800) !important;
+  border: 1px solid var(--color-void-600) !important;
+  color: #e5e7eb !important;
+}
+
+.ant-spin-dot-item {
+  background: var(--color-cyber-500) !important;
+}
+
+.ant-descriptions-item-label {
+  color: #6b7280 !important;
+}
+
+.ant-descriptions-item-content {
+  color: #e5e7eb !important;
+}
+
+.ant-tag {
+  border-radius: 20px !important;
+}
+
+/* Dark Modal styles */
+.ant-modal-content {
+  background: var(--color-void-800) !important;
+  border: 1px solid var(--color-void-600) !important;
+}
+
+.ant-modal-header {
+  background: var(--color-void-800) !important;
+  border-bottom: 1px solid var(--color-void-600) !important;
+}
+
+.ant-modal-title {
+  color: #e5e7eb !important;
+}
+
+.ant-modal-close {
+  color: #6b7280 !important;
+}
+
+.ant-modal-close:hover {
+  color: #e5e7eb !important;
+}
+
+.ant-modal-body {
+  color: #e5e7eb !important;
+}
+
+.ant-modal-footer {
+  background: var(--color-void-800) !important;
+  border-top: 1px solid var(--color-void-600) !important;
+}
+
+.ant-modal-confirm-content {
+  color: #9ca3af !important;
+}
+
+.ant-modal-confirm-title {
+  color: #e5e7eb !important;
+}
+
+/* Checkbox dark styles */
+.ant-checkbox-wrapper {
+  color: #9ca3af !important;
+}
+
+.ant-checkbox-inner {
+  background: var(--color-void-700) !important;
+  border-color: var(--color-void-600) !important;
+}
+
+.ant-checkbox-checked .ant-checkbox-inner {
+  background: var(--color-cyber-500) !important;
+  border-color: var(--color-cyber-500) !important;
+}
+
+/* Form item dark styles */
+.ant-form-item-explain-error {
+  color: var(--color-alert-400) !important;
+}
+
+/* TextArea dark styles */
+.ant-input-textarea textarea {
+  background: var(--color-void-800) !important;
+  color: #e5e7eb !important;
+}

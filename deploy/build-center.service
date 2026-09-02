@@ -1,0 +1,65 @@
+# Build Center — systemd unit
+#
+# 為什麼需要:服務目前靠 `./start.sh` 手動啟動,機器重開就沒了,而且沒有任何
+# 東西會在它 crash 之後把它拉起來。
+#
+# 安裝:
+#   cp deploy/build-center.service /etc/systemd/system/
+#   systemctl daemon-reload
+#   systemctl enable --now build-center
+#   systemctl status build-center
+#   journalctl -u build-center -f
+#
+# 注意:安裝前請先確認沒有手動啟動的 instance 還佔著 port(ss -ltnp | grep 5018),
+# 否則新的會 bind 失敗。
+
+[Unit]
+Description=Build Center — Nuitka / frontend / Docker packaging service
+Documentation=file:///media/disk0/Tony/devops/build_center/README.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+# 反覆 crash 時不要無限重啟洗爆 journal;5 分鐘內失敗 5 次就停下等人看。
+# 這兩個鍵在 systemd >= 230 屬於 [Unit],放在 [Service] 會被靜默忽略。
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=exec
+
+# 服務跑 root:編譯目標專案、寫入工作區、呼叫 docker 都需要。這也是 .venv 與
+# .venv-py3XX 的擁有者 —— 換使用者會讓 uv 建立的直譯器 symlink 全部斷鏈,
+# 那正是 per-version venv 曾經整批失效的原因(見 scripts/setup_nuitka_venvs.sh)。
+User=root
+Group=root
+WorkingDirectory=/media/disk0/Tony/devops/build_center
+
+# uv 裝在使用者家目錄,systemd 的預設 PATH 找不到它。
+Environment=PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PYTHONUNBUFFERED=1
+
+# 密鑰從這裡帶入,而不是靠 pydantic-settings 直接讀 .env。
+# ⚠️ 改用 EnvironmentFile 之後,密鑰就會出現在服務行程的 environ 裡 ——
+# 而 nuitka_worker 的 smoke test 目前把整個 os.environ 傳給「使用者編譯出來的
+# 執行檔」。啟用這一行之前,請先把 smoke test 改成白名單,否則等於把
+# JWT_SECRET_KEY / GITLAB_TOKEN 交給任意受測程式。
+# EnvironmentFile=/media/disk0/Tony/devops/build_center/.env
+
+ExecStart=/root/.local/bin/uv run python main.py
+
+# 建置動輒數十分鐘,停機時要給正在跑的 Nuitka 收尾時間,而不是立刻 SIGKILL。
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+Restart=on-failure
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=build-center
+
+# 單一行程是刻意的:TaskManager 的任務狀態、WebSocket 連線集合與 build
+# semaphore 全在行程記憶體裡,開第二個 worker 會看不到第一個的任務。
+# 不要在這裡加 uvicorn --workers。
+
+[Install]
+WantedBy=multi-user.target
