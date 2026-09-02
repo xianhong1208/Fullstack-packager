@@ -1,8 +1,10 @@
 """Authentication API routes."""
 
+import secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -52,8 +54,10 @@ from app.services.auth import (
     get_user_by_username,
     get_user_count,
     get_user_permissions,
+    hash_password,
     hash_token,
 )
+from app.services import mcp_oauth
 from app.services.permission import get_current_user, CurrentUser
 from app.services.audit import log_action, AuditAction, AuditStatus, ResourceType
 
@@ -563,3 +567,135 @@ async def revoke_session_endpoint(
             detail="Session not found",
         )
     return {"message": "Session revoked successfully"}
+
+
+# ---------------------------------------------------------------------------
+# MCP Center single sign-on (optional; local email/password stays available)
+# ---------------------------------------------------------------------------
+
+_SSO_STATE_COOKIE = "mcp_sso_state"
+
+
+@router.get("/oauth/mcp/status")
+async def mcp_oauth_status() -> dict:
+    """Whether "Sign in with MCP Center" should be offered on the login page."""
+    return {"enabled": mcp_oauth.is_enabled()}
+
+
+@router.get("/oauth/mcp/login")
+async def mcp_oauth_login() -> RedirectResponse:
+    """Start the SSO flow: redirect the browser to MCP Center's consent screen."""
+    if not mcp_oauth.is_enabled():
+        raise HTTPException(status_code=404, detail="MCP Center sign-in is not enabled")
+    state = secrets.token_urlsafe(24)
+    verifier, challenge = mcp_oauth.generate_pkce()
+    redirect = RedirectResponse(mcp_oauth.build_authorize_url(state, challenge), status_code=302)
+    # The PKCE verifier + state travel in a short-lived, signed, HttpOnly cookie.
+    redirect.set_cookie(
+        _SSO_STATE_COOKIE,
+        mcp_oauth.sign_flow_state(state, verifier),
+        max_age=600,
+        httponly=True,
+        samesite="lax",
+        path="/auth/oauth/mcp",
+    )
+    return redirect
+
+
+@router.get("/oauth/mcp/callback")
+async def mcp_oauth_callback(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+) -> RedirectResponse:
+    """Finish the SSO flow: exchange the code, map the identity to a local account,
+    issue Build Center's own session, and hand the tokens back to the SPA."""
+    settings = get_settings()
+    frontend = settings.mcp_oauth_redirect_uri.rsplit("/auth/", 1)[0]  # app origin
+
+    def _fail(reason: str) -> RedirectResponse:
+        r = RedirectResponse(f"{frontend}/login?sso_error={reason}", status_code=302)
+        r.delete_cookie(_SSO_STATE_COOKIE, path="/auth/oauth/mcp")
+        return r
+
+    if error:
+        return _fail(error)
+    if not code or not state:
+        return _fail("missing_code")
+
+    try:
+        verifier = mcp_oauth.read_flow_state(request.cookies.get(_SSO_STATE_COOKIE), state)
+        tokens = await mcp_oauth.exchange_code(code, verifier)
+        identity = mcp_oauth.identity_from_token(tokens["access_token"])
+    except (mcp_oauth.McpOAuthError, KeyError) as e:
+        return _fail(str(e).replace(" ", "_")[:60] or "sso_failed")
+
+    user = await _find_or_create_sso_user(db, identity)
+    if not user.is_active:
+        return _fail("account_pending_approval")
+
+    ip = resolve_client_ip(request)
+    access_token, refresh_token = await create_tokens(
+        db, user, remember_me=False, device_info="MCP Center SSO", ip_address=ip
+    )
+    await update_last_login(db, user)
+    expires_in = ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+    # Hand the tokens to the SPA in the URL fragment (never sent to a server, so it
+    # does not land in access logs), where the login page stores them and continues.
+    r = RedirectResponse(
+        f"{frontend}/login#access_token={access_token}"
+        f"&refresh_token={refresh_token}&expires_in={expires_in}",
+        status_code=302,
+    )
+    r.delete_cookie(_SSO_STATE_COOKIE, path="/auth/oauth/mcp")
+    return r
+
+
+async def _find_or_create_sso_user(db: AsyncSession, identity: dict) -> User:
+    """Find the local account linked to this MCP Center identity, or create one.
+
+    New SSO accounts are created inactive with the 'user' role, exactly like a
+    self-registration — an administrator approves them before first sign-in.
+    """
+    subject = identity["subject"]
+    result = await db.execute(
+        select(User)
+        .where(User.oauth_provider == "mcp", User.oauth_subject == subject)
+        .options(selectinload(User.role))
+    )
+    user = result.scalar_one_or_none()
+    if user is not None:
+        return user
+
+    count = (await db.execute(select(func.count()).select_from(User))).scalar() or 0
+    is_first_user = count == 0
+    role_name = "admin" if is_first_user else "user"
+    role = (await db.execute(select(Role).where(Role.name == role_name))).scalar_one_or_none()
+
+    # Build a unique local username from the email local-part or the subject.
+    email = identity.get("email")
+    base = (email.split("@")[0] if email else f"mcp-{subject[:8]}")[:80]
+    username = base
+    while (await db.execute(select(User).where(User.username == username))).scalar_one_or_none():
+        username = f"{base}-{secrets.token_hex(2)}"
+
+    user = User(
+        username=username,
+        # SSO users never sign in with a password; store an unusable random hash.
+        password_hash=hash_password(secrets.token_urlsafe(32)),
+        email=email,
+        role_id=role.id if role else None,
+        is_active=is_first_user,
+        oauth_provider="mcp",
+        oauth_subject=subject,
+    )
+    db.add(user)
+    await db.commit()
+    result = await db.execute(
+        select(User).where(User.id == user.id).options(selectinload(User.role))
+    )
+    return result.scalar_one()

@@ -31,11 +31,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:5018',
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://localhost:5018',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:8000',
+        target: 'ws://localhost:5018',
         ws: true,
       },
     },

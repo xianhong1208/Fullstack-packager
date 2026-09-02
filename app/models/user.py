@@ -37,6 +37,10 @@ class User(Base):
     security_question: Mapped[str | None] = mapped_column(Text, nullable=True)
     security_answer_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # External identity when the account signs in through MCP Center SSO.
+    oauth_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    oauth_subject: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+
     # Relationships
     role: Mapped["Role | None"] = relationship("Role", back_populates="users")
     login_history: Mapped[list["LoginHistory"]] = relationship(

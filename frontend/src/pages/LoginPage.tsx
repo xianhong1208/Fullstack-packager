@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { BuildOutlined, UserOutlined, LockOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons'
-import { useAuth, checkFirstUser } from '../contexts/AuthContext'
+import { BuildOutlined, UserOutlined, LockOutlined, LoadingOutlined, CheckCircleOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
+import { useAuth, checkFirstUser, tokenManager } from '../contexts/AuthContext'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -16,12 +16,43 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [pendingApproval, setPendingApproval] = useState(false)
+  const [ssoEnabled, setSsoEnabled] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/')
     }
   }, [isAuthenticated, navigate])
+
+  // MCP Center SSO: consume tokens handed back in the URL fragment, surface errors,
+  // and decide whether to show the "Sign in with MCP Center" button.
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1))
+    const accessToken = hash.get('access_token')
+    if (accessToken) {
+      tokenManager.setTokens(
+        accessToken,
+        hash.get('refresh_token'),
+        Number(hash.get('expires_in') || 900),
+        false,
+      )
+      window.location.replace('/')
+      return
+    }
+    const params = new URLSearchParams(window.location.search)
+    const ssoError = params.get('sso_error')
+    if (ssoError) {
+      setLocalError(
+        ssoError === 'account_pending_approval'
+          ? '帳號已建立，請等待管理員審核後再使用 MCP Center 登入。'
+          : `MCP Center 登入失敗:${ssoError}`,
+      )
+    }
+    fetch('/auth/oauth/mcp/status')
+      .then((r) => (r.ok ? r.json() : { enabled: false }))
+      .then((d) => setSsoEnabled(!!d.enabled))
+      .catch(() => setSsoEnabled(false))
+  }, [])
 
   useEffect(() => {
     checkFirstUser().then((isFirst) => {
@@ -213,6 +244,24 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        {/* MCP Center single sign-on (only when enabled on the server) */}
+        {ssoEnabled && !isRegisterMode && (
+          <div className="mt-4">
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-gray-700/60" />
+              <span className="text-xs text-gray-500">或</span>
+              <div className="flex-1 h-px bg-gray-700/60" />
+            </div>
+            <a
+              href="/auth/oauth/mcp/login"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-600 text-gray-200 hover:border-cyan-500 hover:text-cyan-300 transition-colors"
+            >
+              <SafetyCertificateOutlined />
+              使用 MCP Center 登入
+            </a>
+          </div>
+        )}
 
         {/* Toggle mode */}
         {!isFirstUser && (

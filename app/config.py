@@ -48,6 +48,18 @@ class Settings(BaseSettings):
     # set, one is generated on first use and appended to .env, like the JWT secret.
     settings_encryption_key: str | None = None
 
+    # === MCP Center single sign-on (optional) ===
+    # When enabled, the login page offers "Sign in with MCP Center". Build Center
+    # runs the OAuth 2.1 authorization-code + PKCE flow against MCP Center, then
+    # issues its own session — local email/password sign-in stays available.
+    mcp_oauth_enabled: bool = False
+    mcp_center_url: str = "http://localhost:4568"  # MCP Center issuer (OAUTH_ISSUER)
+    mcp_oauth_client_id: str = ""
+    mcp_oauth_client_secret: str = ""  # blank for a public client (PKCE only)
+    # Where MCP Center sends the browser back — must be registered on the client.
+    mcp_oauth_redirect_uri: str = "http://localhost:5018/auth/oauth/mcp/callback"
+    mcp_oauth_scopes: str = "openid"
+
     # Application log level. Nothing configures the root logger by default —
     # uvicorn only sets up its own "uvicorn.*" loggers — so app logger.info()
     # calls were being discarded entirely and warnings arrived through Python's
