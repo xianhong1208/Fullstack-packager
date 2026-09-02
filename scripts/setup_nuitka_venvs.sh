@@ -8,7 +8,7 @@
 # version.
 #
 # Usage:
-#   cd /media/disk0/Tony/devops/build_center
+#   cd /opt/build-center
 #   bash scripts/setup_nuitka_venvs.sh
 #
 # After install, build_center auto-detects these venvs on startup, and when the

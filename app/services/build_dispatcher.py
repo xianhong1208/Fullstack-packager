@@ -690,7 +690,7 @@ async def _post_build_cleanup(task_id: str, config: BuildConfig) -> None:
       - source_type != git          → do nothing (local mode workspaces
                                        are owned by the user, not us)
       - Docker mode + opted in      → delete entire workspace (image
-                                       already in /media/disk1/docker_images)
+                                       already in DOCKER_IMAGES_DIR)
       - Non-Docker + opted in       → shrink workspace to output_dir only,
                                        preserving the download endpoint
     """

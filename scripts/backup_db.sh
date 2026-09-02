@@ -12,7 +12,7 @@
 #   BACKUP_DIR=/mnt/nas/bc bash scripts/backup_db.sh
 #
 # Recommended cron (daily at 03:30):
-#   30 3 * * * cd /media/disk0/Tony/devops/build_center && bash scripts/backup_db.sh >> /var/log/build_center_backup.log 2>&1
+#   30 3 * * * cd /opt/build-center && bash scripts/backup_db.sh >> /var/log/build_center_backup.log 2>&1
 
 set -euo pipefail
 
@@ -28,7 +28,7 @@ from app.config import get_settings
 s = get_settings()
 print(s.db_host, s.db_port, s.db_name, s.db_user)")"
 
-BACKUP_DIR="${BACKUP_DIR:-/media/disk0/Tony/devops/build_center_backups}"
+BACKUP_DIR="${BACKUP_DIR:-./data/backups}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 
 mkdir -p "$BACKUP_DIR"
