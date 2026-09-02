@@ -105,17 +105,14 @@ def identity_from_token(access_token: str) -> dict:
     so it is trusted; the signature is still verified against MCP Center's JWKS when
     reachable, falling back to an unverified decode if JWKS cannot be fetched.
     """
+    # Verify the token's RS256 signature against MCP Center's JWKS, unconditionally.
+    # The backend just reached the same MCP Center host for the token exchange, so its
+    # JWKS is reachable; any fetch or verification failure fails the login rather than
+    # falling back to an unverified read (which would accept a forged token).
     issuer = _issuer()
     try:
         jwk_client = jwt.PyJWKClient(f"{issuer}/.well-known/jwks.json")
         signing_key = jwk_client.get_signing_key_from_jwt(access_token)
-    except (jwt.PyJWKClientError, httpx.HTTPError, OSError):
-        # JWKS could not be fetched (e.g. MCP Center reachable only over the back
-        # channel): fall back to an unverified read of a token we just received
-        # directly from its token endpoint over TLS. A key that IS fetched but
-        # fails verification below is fatal, not silently accepted.
-        claims = jwt.decode(access_token, options={"verify_signature": False})
-    else:
         claims = jwt.decode(
             access_token,
             signing_key.key,
@@ -123,6 +120,8 @@ def identity_from_token(access_token: str) -> dict:
             issuer=issuer,
             options={"verify_aud": False},
         )
+    except (jwt.PyJWKClientError, jwt.InvalidTokenError, httpx.HTTPError, OSError) as exc:
+        raise McpOAuthError(f"could not verify identity token: {exc}") from exc
     subject = claims.get("sub")
     if not subject:
         raise McpOAuthError("identity token has no subject")

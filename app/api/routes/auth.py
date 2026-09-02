@@ -680,22 +680,19 @@ async def _find_or_create_sso_user(db: AsyncSession, identity: dict) -> User:
     role_name = "admin" if is_first_user else "user"
     role = (await db.execute(select(Role).where(Role.name == role_name))).scalar_one_or_none()
 
+    # The identity is keyed only by (oauth_provider, oauth_subject). We deliberately
+    # DO NOT link to an existing local account by matching email: MCP Center emails
+    # are not proven here, so silently binding a foreign OAuth subject to a local
+    # account would be an account-takeover path. If the email is already taken, the
+    # SSO account is created without one (linking must be an explicit, authenticated
+    # action, not automatic).
     email = identity.get("email")
-    # If a local account already uses this email, link it to the MCP identity
-    # instead of creating a duplicate (and avoid the unique-email IntegrityError).
     if email:
-        existing = (
-            await db.execute(
-                select(User).where(User.email == email).options(selectinload(User.role))
-            )
+        email_taken = (
+            await db.execute(select(User.id).where(User.email == email))
         ).scalar_one_or_none()
-        if existing is not None:
-            if existing.oauth_provider is None:
-                existing.oauth_provider = "mcp"
-                existing.oauth_subject = subject
-                await db.commit()
-                await db.refresh(existing)
-            return existing
+        if email_taken is not None:
+            email = None
 
     # Build a unique local username from the email local-part or the subject.
     base = (email.split("@")[0] if email else f"mcp-{subject[:8]}")[:80]
