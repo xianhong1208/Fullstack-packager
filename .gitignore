@@ -35,3 +35,6 @@ build_center_backups/
 
 # Claude Code local config
 .claude/
+
+# Local SQLite database and runtime data
+/data/

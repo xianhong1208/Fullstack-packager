@@ -20,6 +20,7 @@ Create Date: 2026-08-13
 """
 from typing import Sequence, Union
 
+import sqlalchemy as sa
 from alembic import op
 
 
@@ -30,11 +31,19 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _has_column(table: str, column: str) -> bool:
+    bind = op.get_bind()
+    return column in {c["name"] for c in sa.inspect(bind).get_columns(table)}
+
+
 def upgrade() -> None:
-    """Add history.result if it is not already present."""
-    op.execute("ALTER TABLE history ADD COLUMN IF NOT EXISTS result JSON")
+    """Add history.result if it is not already present (dialect-agnostic)."""
+    if not _has_column("history", "result"):
+        op.add_column("history", sa.Column("result", sa.JSON(), nullable=True))
 
 
 def downgrade() -> None:
-    """Drop history.result."""
-    op.execute("ALTER TABLE history DROP COLUMN IF EXISTS result")
+    """Drop history.result if present."""
+    if _has_column("history", "result"):
+        with op.batch_alter_table("history") as batch_op:
+            batch_op.drop_column("result")

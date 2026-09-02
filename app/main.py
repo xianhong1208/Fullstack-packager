@@ -61,6 +61,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler."""
     # Startup
     await init_db()
+    # Seed RBAC (permissions + roles) so a fresh DB is usable immediately: the
+    # first user to register is made admin and must have a role that exists.
+    from app.database import async_session as _seed_session
+    from app.services.seed import seed_rbac
+    async with _seed_session() as _sdb:
+        await seed_rbac(_sdb)
     # Reconcile orphans: tasks left RUNNING/PENDING by a previous crash/restart
     # have no live process anymore — mark them FAILED so they don't spin forever.
     from app.database import async_session

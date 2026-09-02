@@ -15,20 +15,14 @@
 
 ## 安裝
 
-**環境需求:** Python 3.13+、[uv](https://docs.astral.sh/uv/)、PostgreSQL、Node.js(前端建置用),以及各引擎所需的 Nuitka 工具鏈(C 編譯器)與 Docker(Docker 輸出用)。`pigz` 選用,可加速 image 壓縮。
+**環境需求:** Python 3.13+、[uv](https://docs.astral.sh/uv/)、Node.js(前端建置用),以及各引擎所需的 Nuitka 工具鏈(C 編譯器)與 Docker(Docker 輸出用)。資料庫預設用本機 SQLite 檔(免設定);PostgreSQL 為選用(設 `DATABASE_URL`)。`pigz` 選用,可加速 image 壓縮。
 
 ```bash
 git clone https://github.com/xianhong1208/Fullstack-packager.git build-center
 cd build-center
 uv sync                       # 後端相依
 cd frontend && npm install && npm run build && cd ..
-cp .env.example .env          # 再填入你的 PostgreSQL DB_*
-```
-
-建立資料庫(migration 由程式在啟動時自動套用):
-
-```bash
-createdb build_center         # 或把 DB_NAME 設成與 .env 一致
+cp .env.example .env          # 選用;用 SQLite 完全免設定
 ```
 
 ## 快速開始
@@ -67,7 +61,7 @@ uv run python main.py         # 先套用 migration,再於 http://0.0.0.0:5018 �
 
 | 變數 | 預設 | 說明 |
 |---|---|---|
-| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | localhost / 5432 / build_center / postgres / admin | PostgreSQL 連線。 |
+| `DATABASE_URL` | *(空 → SQLite)* | 預設用本機 SQLite 檔;設 `postgresql+asyncpg://…` DSN 則改用 PostgreSQL。 |
 | `HOST` / `PORT` | `0.0.0.0` / `5018` | 綁定位址。 |
 | `JWT_SECRET_KEY` | 自動 | Session 簽章金鑰;留空則首次啟動產生並寫入 `.env`。 |
 | `SETTINGS_ENCRYPTION_KEY` | 自動 | 加密儲存的 Git token;留空則自動產生寫入 `.env`。 |

@@ -31,7 +31,7 @@ config = context.config
 
 # Get database URL from app config
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", settings.async_database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -67,7 +67,13 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    # render_as_batch lets SQLite emulate ALTER TABLE (drop/alter column) via a
+    # table rebuild; it is a no-op on PostgreSQL.
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        render_as_batch=connection.dialect.name == "sqlite",
+    )
 
     with context.begin_transaction():
         context.run_migrations()

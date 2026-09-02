@@ -99,11 +99,12 @@ async def register(
             detail="Username already exists",
         )
 
-    # Serialize the first-user check: two concurrent registrations on a
-    # fresh install could both read count==0 and both become admin. The
-    # transaction-scoped advisory lock is released automatically at
-    # commit/rollback (constant is arbitrary but must be unique app-wide).
-    await db.execute(text("SELECT pg_advisory_xact_lock(823941)"))
+    # Serialize the first-user check: two concurrent registrations on a fresh
+    # install could both read count==0 and both become admin. On PostgreSQL a
+    # transaction-scoped advisory lock (released at commit/rollback) does this;
+    # SQLite serializes writes itself (single writer), so the lock is skipped.
+    if db.bind.dialect.name == "postgresql":
+        await db.execute(text("SELECT pg_advisory_xact_lock(823941)"))
 
     # Check if this is the first user
     count = await get_user_count(db)

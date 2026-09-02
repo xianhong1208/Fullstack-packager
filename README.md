@@ -15,20 +15,14 @@
 
 ## Install
 
-**Prerequisites:** Python 3.13+, [uv](https://docs.astral.sh/uv/), PostgreSQL, Node.js (for frontend builds), and — for the engines they drive — Nuitka's toolchain (a C compiler) and Docker (for Docker output). `pigz` is optional and speeds up image compression.
+**Prerequisites:** Python 3.13+, [uv](https://docs.astral.sh/uv/), Node.js (for frontend builds), and — for the engines they drive — Nuitka's toolchain (a C compiler) and Docker (for Docker output). The database is a local SQLite file by default (no setup); PostgreSQL is optional (set `DATABASE_URL`). `pigz` is optional and speeds up image compression.
 
 ```bash
 git clone https://github.com/xianhong1208/Fullstack-packager.git build-center
 cd build-center
 uv sync                       # backend deps
 cd frontend && npm install && npm run build && cd ..
-cp .env.example .env          # then set DB_* for your PostgreSQL
-```
-
-Create the database (the app applies migrations itself on startup):
-
-```bash
-createdb build_center         # or set DB_NAME to match your .env
+cp .env.example .env          # optional; SQLite works with no config
 ```
 
 ## Quick start
@@ -67,7 +61,7 @@ Everything is environment-driven. `.env.example` lists the essentials; `app/conf
 
 | Variable | Default | Description |
 |---|---|---|
-| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | localhost / 5432 / build_center / postgres / admin | PostgreSQL connection. |
+| `DATABASE_URL` | *(empty → SQLite)* | A local SQLite file by default; set a `postgresql+asyncpg://…` DSN to use PostgreSQL. |
 | `HOST` / `PORT` | `0.0.0.0` / `5018` | Bind address. |
 | `JWT_SECRET_KEY` | auto | Session signing key; generated to `.env` on first start if empty. |
 | `SETTINGS_ENCRYPTION_KEY` | auto | Encrypts stored Git tokens; generated to `.env` if empty. |

@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -13,14 +14,30 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# Create async engine
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-)
+# Create the async engine. SQLite (the zero-setup default) and PostgreSQL need
+# different engine options: SQLite has no connection pool to size and needs
+# check_same_thread off for the async driver, plus WAL for concurrent reads.
+if settings.is_sqlite:
+    engine = create_async_engine(
+        settings.async_database_url,
+        echo=settings.debug,
+        connect_args={"check_same_thread": False},
+    )
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _sqlite_pragmas(dbapi_conn, _record):
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.close()
+else:
+    engine = create_async_engine(
+        settings.async_database_url,
+        echo=settings.debug,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+    )
 
 # Session factory
 async_session = async_sessionmaker(

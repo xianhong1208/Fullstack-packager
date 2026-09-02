@@ -17,8 +17,12 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # Database
-    db_host: str = "localhost"
+    # Database. Empty (the default) uses a local SQLite file — zero setup. Set
+    # DATABASE_URL to a PostgreSQL DSN (postgresql+asyncpg://user:pass@host/db)
+    # to use Postgres instead. The DB_* fields build that DSN when DATABASE_URL
+    # is left empty but DB_HOST is pointed at a real server.
+    database_url: str = ""
+    db_host: str = ""
     db_port: int = 5432
     db_name: str = "build_center"
     db_user: str = "postgres"
@@ -207,21 +211,41 @@ class Settings(BaseSettings):
         """Parse the CSV trusted-proxy list into a set of IP strings."""
         return {p.strip() for p in self.trusted_proxy_ips.split(",") if p.strip()}
 
+    def _resolve_url(self, *, async_driver: bool) -> str:
+        """Resolve the database URL. Precedence: DATABASE_URL, then DB_* (Postgres),
+        then a local SQLite file. `async_driver` selects the async vs sync driver."""
+        if self.database_url:
+            url = self.database_url
+            # Normalise the driver to match the requested (a)sync mode.
+            if url.startswith("postgresql"):
+                base = url.split("://", 1)[1]
+                return f"postgresql+asyncpg://{base}" if async_driver else f"postgresql://{base.replace('+asyncpg', '')}"
+            if url.startswith("sqlite"):
+                base = url.split("://", 1)[1]
+                return f"sqlite+aiosqlite://{base}" if async_driver else f"sqlite://{base}"
+            return url
+        if self.db_host:
+            driver = "postgresql+asyncpg" if async_driver else "postgresql"
+            return f"{driver}://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        # Default: a local SQLite file (created on first use).
+        db_path = Path("./data/build_center.db").resolve()
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        driver = "sqlite+aiosqlite" if async_driver else "sqlite"
+        return f"{driver}:///{db_path}"
+
     @property
-    def database_url(self) -> str:
-        """Build async database URL for SQLAlchemy."""
-        return (
-            f"postgresql+asyncpg://{self.db_user}:{self.db_password}"
-            f"@{self.db_host}:{self.db_port}/{self.db_name}"
-        )
+    def async_database_url(self) -> str:
+        """Async SQLAlchemy URL (used by the app engine and alembic)."""
+        return self._resolve_url(async_driver=True)
 
     @property
     def sync_database_url(self) -> str:
-        """Build sync database URL for migrations/scripts."""
-        return (
-            f"postgresql://{self.db_user}:{self.db_password}"
-            f"@{self.db_host}:{self.db_port}/{self.db_name}"
-        )
+        """Sync SQLAlchemy URL (for tooling that needs a sync driver)."""
+        return self._resolve_url(async_driver=False)
+
+    @property
+    def is_sqlite(self) -> bool:
+        return self.async_database_url.startswith("sqlite")
 
 
 @lru_cache
