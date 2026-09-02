@@ -31,9 +31,9 @@ const PERMANENT_CLOSE_CODES = new Set([4403, 4404])
 const AUTH_CLOSE_CODE = 4401
 const AUTH_RETRY_DELAY_MS = 3000
 const CLOSE_REASONS: Record<number, string> = {
-  [AUTH_CLOSE_CODE]: '登入狀態已失效，請重新整理頁面以繼續接收即時日誌',
-  4403: '沒有權限接收此任務的即時日誌',
-  4404: '此任務已不在即時佇列中（完成後會從記憶體移除），改以歷史紀錄顯示',
+  [AUTH_CLOSE_CODE]: 'Your session has expired. Refresh the page to keep receiving live logs.',
+  4403: 'You do not have permission to view live logs for this build.',
+  4404: 'This build is no longer live (finished builds leave the live queue). Showing the recorded history instead.',
 }
 
 export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
@@ -113,7 +113,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       // is evicted from the manager's memory, so a tab left open on an old
       // build used to reconnect every 30s forever.
       if (PERMANENT_CLOSE_CODES.has(event.code)) {
-        setStoppedReason(CLOSE_REASONS[event.code] ?? event.reason ?? '連線已被伺服器關閉')
+        setStoppedReason(CLOSE_REASONS[event.code] ?? event.reason ?? 'The server closed the connection.')
         return
       }
       if (event.code === AUTH_CLOSE_CODE) {

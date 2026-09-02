@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
     setError(null)
 
     if (!username.trim()) {
-      setError('請輸入您的使用者名稱')
+      setError('Enter your username.')
       return
     }
 
@@ -35,10 +35,10 @@ export default function ForgotPasswordPage() {
         setSecurityQuestion(response.security_question)
         setStep('security_question')
       } else {
-        setError('此帳號尚未設定安全問題，請聯絡管理員。')
+        setError('This account has no security question set. Contact an administrator to reset your password.')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '檢查帳號失敗')
+      setError(err instanceof Error ? err.message : 'Could not check that account. Try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
     setError(null)
 
     if (!answer.trim()) {
-      setError('請輸入您的答案')
+      setError('Enter your answer.')
       return
     }
 
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
       setResetToken(response.reset_token)
       setStep('reset_password')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '答案錯誤')
+      setError(err instanceof Error ? err.message : 'That answer is incorrect. Try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -70,12 +70,12 @@ export default function ForgotPasswordPage() {
     setError(null)
 
     if (newPassword.length < 6) {
-      setError('密碼長度至少需要 6 個字元')
+      setError('Your password must be at least 6 characters.')
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('兩次輸入的密碼不一致')
+      setError('The passwords do not match. Re-enter them.')
       return
     }
 
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
       await authApi.resetPassword(resetToken, newPassword)
       setStep('success')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '重設密碼失敗')
+      setError(err instanceof Error ? err.message : 'Could not reset your password. Try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -93,19 +93,19 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="glass-card w-full max-w-md p-8">
-        {/* Logo */}
+        {/* Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-cyber-500/20 to-cyber-600/20 border border-cyber-500/30 mb-4">
-            <BuildOutlined className="text-3xl text-cyber-400" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-cyber-500 mb-4">
+            <BuildOutlined className="text-3xl text-void-950" />
           </div>
-          <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            {step === 'success' ? '密碼已重設' : '忘記密碼'}
+          <h1 className="text-2xl font-semibold text-[var(--ink)]" style={{ fontFamily: 'var(--font-display)' }}>
+            {step === 'success' ? 'Password reset' : 'Forgot password'}
           </h1>
-          <p className="text-gray-400 mt-2 text-sm">
-            {step === 'username' && '輸入您的使用者名稱以復原帳號'}
-            {step === 'security_question' && '回答您的安全問題'}
-            {step === 'reset_password' && '建立新密碼'}
-            {step === 'success' && '您的密碼已成功重設'}
+          <p className="mt-2 text-sm text-[var(--ink-muted)]">
+            {step === 'username' && 'Enter your username to recover your account'}
+            {step === 'security_question' && 'Answer your security question'}
+            {step === 'reset_password' && 'Create a new password'}
+            {step === 'success' && 'Your password has been reset'}
           </p>
         </div>
 
@@ -113,9 +113,9 @@ export default function ForgotPasswordPage() {
         {step === 'username' && (
           <form onSubmit={handleUsernameSubmit} className="space-y-5">
             <div>
-              <label htmlFor="forgot-username" className="block text-sm text-gray-400 mb-2">使用者名稱</label>
+              <label htmlFor="forgot-username" className="block text-sm text-[var(--ink-muted)] mb-2">Username</label>
               <div className="relative">
-                <UserOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
+                <UserOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-faint)] z-10" />
                 <input
                   id="forgot-username"
                   type="text"
@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setUsername(e.target.value)}
                   className="input-field"
                   style={{ paddingLeft: 40 }}
-                  placeholder="請輸入您的使用者名稱"
+                  placeholder="Enter your username"
                   autoComplete="username"
                 />
               </div>
@@ -138,10 +138,10 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn-cyber w-full flex items-center justify-center gap-2"
+              className="btn-cyber w-full flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber-300"
             >
               {isSubmitting ? <LoadingOutlined className="animate-spin" /> : null}
-              繼續
+              Continue
             </button>
           </form>
         )}
@@ -149,22 +149,22 @@ export default function ForgotPasswordPage() {
         {/* Step 2: Security Question */}
         {step === 'security_question' && (
           <form onSubmit={handleAnswerSubmit} className="space-y-5">
-            <div className="p-4 rounded-lg bg-gray-800/50 border border-gray-700">
+            <div className="p-4 rounded-lg bg-void-800/50 border border-void-700">
               <div className="flex items-start gap-3">
                 <QuestionCircleOutlined className="text-cyber-400 text-lg mt-0.5" />
-                <p className="text-gray-300">{securityQuestion}</p>
+                <p className="text-[var(--ink)]">{securityQuestion}</p>
               </div>
             </div>
 
             <div>
-              <label htmlFor="forgot-answer" className="block text-sm text-gray-400 mb-2">您的答案</label>
+              <label htmlFor="forgot-answer" className="block text-sm text-[var(--ink-muted)] mb-2">Your answer</label>
               <input
                 id="forgot-answer"
                 type="text"
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 className="input-field"
-                placeholder="請輸入您的答案"
+                placeholder="Enter your answer"
                 autoComplete="off"
               />
             </div>
@@ -178,10 +178,10 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn-cyber w-full flex items-center justify-center gap-2"
+              className="btn-cyber w-full flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber-300"
             >
               {isSubmitting ? <LoadingOutlined className="animate-spin" /> : null}
-              驗證答案
+              Verify answer
             </button>
           </form>
         )}
@@ -190,9 +190,9 @@ export default function ForgotPasswordPage() {
         {step === 'reset_password' && (
           <form onSubmit={handlePasswordReset} className="space-y-5">
             <div>
-              <label htmlFor="forgot-new-password" className="block text-sm text-gray-400 mb-2">新密碼</label>
+              <label htmlFor="forgot-new-password" className="block text-sm text-[var(--ink-muted)] mb-2">New password</label>
               <div className="relative">
-                <LockOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
+                <LockOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-faint)] z-10" />
                 <input
                   id="forgot-new-password"
                   type="password"
@@ -200,16 +200,16 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="input-field"
                   style={{ paddingLeft: 40 }}
-                  placeholder="請輸入新密碼"
+                  placeholder="Enter a new password"
                   autoComplete="new-password"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="forgot-confirm-password" className="block text-sm text-gray-400 mb-2">確認密碼</label>
+              <label htmlFor="forgot-confirm-password" className="block text-sm text-[var(--ink-muted)] mb-2">Confirm password</label>
               <div className="relative">
-                <LockOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
+                <LockOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-faint)] z-10" />
                 <input
                   id="forgot-confirm-password"
                   type="password"
@@ -217,7 +217,7 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="input-field"
                   style={{ paddingLeft: 40 }}
-                  placeholder="請再次輸入新密碼"
+                  placeholder="Re-enter your new password"
                   autoComplete="new-password"
                 />
               </div>
@@ -232,10 +232,10 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn-cyber w-full flex items-center justify-center gap-2"
+              className="btn-cyber w-full flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber-300"
             >
               {isSubmitting ? <LoadingOutlined className="animate-spin" /> : null}
-              重設密碼
+              Reset password
             </button>
           </form>
         )}
@@ -246,14 +246,14 @@ export default function ForgotPasswordPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-matrix-500/20 border border-matrix-500/30">
               <CheckCircleOutlined className="text-3xl text-matrix-400" />
             </div>
-            <p className="text-gray-300">
-              您的密碼已成功重設，現在可以使用新密碼登入。
+            <p className="text-[var(--ink)]">
+              Your password has been reset. You can now sign in with your new password.
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="btn-cyber w-full"
+              className="btn-cyber w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber-300"
             >
-              前往登入
+              Go to sign in
             </button>
           </div>
         )}
@@ -263,10 +263,10 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 text-center">
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-cyber-400 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-[var(--ink-muted)] hover:text-cyber-400 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber-500/60"
             >
               <ArrowLeftOutlined />
-              返回登入
+              Back to sign in
             </Link>
           </div>
         )}

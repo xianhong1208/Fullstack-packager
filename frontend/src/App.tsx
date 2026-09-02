@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { ConfigProvider, Spin, Modal, Drawer } from 'antd'
-import zhTW from 'antd/locale/zh_TW'
+import enUS from 'antd/locale/en_US'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
@@ -106,10 +106,10 @@ function AppLayout() {
   ).length
 
   const navItems = [
-    { key: '/', icon: <HomeOutlined />, label: '儀表板', badge: activeCount },
-    { key: '/create', icon: <PlusOutlined />, label: '建立任務' },
-    { key: '/history', icon: <HistoryOutlined />, label: '建置歷史' },
-    { key: '/monitor', icon: <DashboardOutlined />, label: '系統監控' },
+    { key: '/', icon: <HomeOutlined />, label: 'Dashboard', badge: activeCount },
+    { key: '/create', icon: <PlusOutlined />, label: 'New build' },
+    { key: '/history', icon: <HistoryOutlined />, label: 'Builds' },
+    { key: '/monitor', icon: <DashboardOutlined />, label: 'Monitoring' },
   ]
 
   const handleLogout = async () => {
@@ -180,14 +180,14 @@ function AppLayout() {
           className={`nav-item w-full ${location.pathname.startsWith('/settings') ? 'active' : ''}`}
         >
           <span className="text-lg"><SettingOutlined /></span>
-          <span className="flex-1 text-left">安全設定</span>
+          <span className="flex-1 text-left">Security</span>
         </button>
 
         {/* Admin: User & Role Management */}
         <PermissionGate permission={['user:view', 'role:view']}>
           <div className="pt-4 mt-4 border-t border-gray-700/30">
             <p className="px-3 mb-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              系統管理
+              Administration
             </p>
             <PermissionGate permission="user:view">
               <button
@@ -195,7 +195,7 @@ function AppLayout() {
                 className={`nav-item w-full ${location.pathname.startsWith('/admin/users') ? 'active' : ''}`}
               >
                 <span className="text-lg"><TeamOutlined /></span>
-                <span className="flex-1 text-left">使用者管理</span>
+                <span className="flex-1 text-left">Users</span>
               </button>
             </PermissionGate>
             <PermissionGate permission="role:view">
@@ -204,7 +204,7 @@ function AppLayout() {
                 className={`nav-item w-full ${location.pathname === '/admin/roles' ? 'active' : ''}`}
               >
                 <span className="text-lg"><SafetyOutlined /></span>
-                <span className="flex-1 text-left">角色管理</span>
+                <span className="flex-1 text-left">Roles</span>
               </button>
             </PermissionGate>
             <PermissionGate permission="user:manage">
@@ -213,7 +213,7 @@ function AppLayout() {
                 className={`nav-item w-full ${location.pathname === '/settings/git-credentials' ? 'active' : ''}`}
               >
                 <span className="text-lg"><KeyOutlined /></span>
-                <span className="flex-1 text-left">Git 憑證</span>
+                <span className="flex-1 text-left">Git credentials</span>
               </button>
             </PermissionGate>
           </div>
@@ -238,8 +238,8 @@ function AppLayout() {
             <button
               onClick={handleLogout}
               className="p-2 rounded-lg text-gray-400 hover:text-alert-400 hover:bg-alert-500/10 transition-colors"
-              title="登出"
-              aria-label="登出"
+              title="Sign out"
+              aria-label="Sign out"
             >
               <LogoutOutlined />
             </button>
@@ -260,7 +260,7 @@ function AppLayout() {
       <button
         type="button"
         onClick={() => setMobileNavOpen(true)}
-        aria-label="開啟導覽選單"
+        aria-label="Open navigation"
         className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-md flex items-center justify-center border border-void-600 bg-void-900 text-cyber-300 hover:border-cyber-500 transition-colors"
       >
         <MenuOutlined className="text-lg" />
@@ -273,7 +273,7 @@ function AppLayout() {
         onClose={() => setMobileNavOpen(false)}
         closable={false}
         width={256}
-        title="導覽選單"
+        title="Navigation"
         rootClassName="lg:hidden"
         styles={{
           body: { padding: 0, background: '#0e1319' },
@@ -341,7 +341,7 @@ function App() {
           development because it is always visible; these only surface in
           particular component states, so they survive to production. */}
       <ConfigProvider
-        locale={zhTW}
+        locale={enUS}
         theme={{
           token: {
             // Instrument theme: flat cobalt primary on cool slate.

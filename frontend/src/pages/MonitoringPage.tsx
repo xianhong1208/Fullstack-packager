@@ -73,9 +73,9 @@ const barColor = (pct: number): string => {
 // Non-color-only status indicator: color is paired with a text label + glyph
 // so the load level is legible without relying on color perception.
 const loadStatus = (pct: number): { label: string; color: string; high: boolean; glyph: string } => {
-  if (pct >= 90) return { label: '過高', color: '#ef4444', high: true, glyph: '▲' }
-  if (pct >= 70) return { label: '偏高', color: '#f59e0b', high: true, glyph: '△' }
-  return { label: '正常', color: '#10b981', high: false, glyph: '●' }
+  if (pct >= 90) return { label: 'High', color: '#ef4444', high: true, glyph: '▲' }
+  if (pct >= 70) return { label: 'Elevated', color: '#f59e0b', high: true, glyph: '△' }
+  return { label: 'Normal', color: '#10b981', high: false, glyph: '●' }
 }
 
 // Generate htop-style block characters for a bar
@@ -173,14 +173,14 @@ export default function MonitoringPage() {
         }}
       >
         <ExclamationCircleOutlined style={{ fontSize: 40, color: '#ef4444' }} aria-hidden="true" />
-        <div style={{ color: '#ef4444', fontWeight: 'bold' }}>無法載入系統監控資料</div>
+        <div style={{ color: '#ef4444', fontWeight: 'bold' }}>Could not load system monitoring data</div>
         <div style={{ color: '#888', maxWidth: 420 }}>{getErrorDetail(error)}</div>
         <Button
           icon={<ReloadOutlined />}
-          aria-label="重新載入系統監控資料"
+          aria-label="Reload system monitoring data"
           onClick={() => refetch()}
         >
-          重試
+          Retry
         </Button>
       </div>
     )
@@ -189,7 +189,7 @@ export default function MonitoringPage() {
   if (isLoading || !stats) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Spin size="large" tip="載入系統監控資料中…" />
+        <Spin size="large" tip="Loading system monitoring data…" />
       </div>
     )
   }
@@ -204,27 +204,37 @@ export default function MonitoringPage() {
   const uptimeLabel = (() => {
     const totalSent = stats.network.bytes_sent
     const totalRecv = stats.network.bytes_recv
-    return `累計傳送 ${formatBytes(totalSent)}｜接收 ${formatBytes(totalRecv)}`
+    return `Sent ${formatBytes(totalSent)} · Received ${formatBytes(totalRecv)}`
   })()
 
   return (
-    <div
-      style={{
-        fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-        fontSize: 13,
-        lineHeight: 1.5,
-        color: '#c8c8c8',
-        background: '#0a0e14',
-        borderRadius: 8,
-        border: '1px solid #1a1f2e',
-        padding: '12px 16px',
-        minHeight: '80vh',
-      }}
-    >
+    <div>
+      {/* Page header — title + subtitle, matching the History landing. */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0, color: 'var(--ink)' }}>System monitoring</h1>
+        <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)' }}>
+          Live CPU, memory, disk, GPU and network figures, refreshed every 2 seconds.
+        </p>
+      </div>
+
+      <div
+        className="glass-card"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: 'var(--ink-muted)',
+          background: '#0b0f14',
+          borderRadius: 8,
+          border: '1px solid var(--color-void-700)',
+          padding: '12px 16px',
+          minHeight: '80vh',
+        }}
+      >
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, borderBottom: '1px solid #1a2030', paddingBottom: 6 }}>
-        <span style={{ color: '#4c8df0', fontWeight: 'bold' }}>系統監控</span>
-        <span style={{ color: '#555' }}>更新頻率：2 秒 | {new Date().toLocaleTimeString()}</span>
+        <span style={{ color: '#4c8df0', fontWeight: 'bold' }}>System monitoring</span>
+        <span style={{ color: '#555' }}>Refresh: 2s · {new Date().toLocaleTimeString()}</span>
       </div>
 
       {/* ── CPU Meters (htop-style, 2 columns) ── */}
@@ -247,7 +257,7 @@ export default function MonitoringPage() {
                 <span style={{ color: barColor(pct), width: 42, textAlign: 'right' }}>
                   {pct.toFixed(1)}%
                 </span>
-                <span style={{ color: st.color, width: 44, fontSize: 11 }} title={`核心 ${i} 負載${st.label}`}>
+                <span style={{ color: st.color, width: 44, fontSize: 11 }} title={`Core ${i} load ${st.label}`}>
                   {st.glyph}{st.high ? st.label : ''}
                 </span>
               </div>
@@ -273,7 +283,7 @@ export default function MonitoringPage() {
                 <span style={{ color: barColor(pct), width: 42, textAlign: 'right' }}>
                   {pct.toFixed(1)}%
                 </span>
-                <span style={{ color: st.color, width: 44, fontSize: 11 }} title={`核心 ${i} 負載${st.label}`}>
+                <span style={{ color: st.color, width: 44, fontSize: 11 }} title={`Core ${i} load ${st.label}`}>
                   {st.glyph}{st.high ? st.label : ''}
                 </span>
               </div>
@@ -291,7 +301,7 @@ export default function MonitoringPage() {
           const st = loadStatus(pct)
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 20 }}>
-              <span style={{ color: '#10b981', width: 48 }}>記憶體</span>
+              <span style={{ color: '#10b981', width: 48 }}>Memory</span>
               <span style={{ color: '#333' }}>[</span>
               <span style={{ letterSpacing: -1 }}>
                 {bar.chars.split('').map((c, ci) => (
@@ -303,7 +313,7 @@ export default function MonitoringPage() {
                 {formatBytes(stats.memory.used)}/{formatBytes(stats.memory.total)}
               </span>
               <span style={{ color: '#555' }}>({pct.toFixed(1)}%)</span>
-              <span style={{ color: st.color }} title={`記憶體負載${st.label}`}>{st.glyph} {st.label}</span>
+              <span style={{ color: st.color }} title={`Memory load ${st.label}`}>{st.glyph} {st.label}</span>
             </div>
           )
         })()}
@@ -315,7 +325,7 @@ export default function MonitoringPage() {
           const st = loadStatus(pct)
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 20 }}>
-              <span style={{ color: '#f59e0b', width: 48 }}>置換</span>
+              <span style={{ color: '#f59e0b', width: 48 }}>Swap</span>
               <span style={{ color: '#333' }}>[</span>
               <span style={{ letterSpacing: -1 }}>
                 {bar.chars.split('').map((c, ci) => (
@@ -327,7 +337,7 @@ export default function MonitoringPage() {
                 {formatBytes(stats.swap.used)}/{formatBytes(stats.swap.total)}
               </span>
               <span style={{ color: '#555' }}>({pct.toFixed(1)}%)</span>
-              <span style={{ color: st.color }} title={`置換空間負載${st.label}`}>{st.glyph} {st.label}</span>
+              <span style={{ color: st.color }} title={`Swap load ${st.label}`}>{st.glyph} {st.label}</span>
             </div>
           )
         })()}
@@ -339,7 +349,7 @@ export default function MonitoringPage() {
           const st = loadStatus(pct)
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 20 }}>
-              <span style={{ color: '#8b5cf6', width: 48 }}>磁碟</span>
+              <span style={{ color: '#8b5cf6', width: 48 }}>Disk</span>
               <span style={{ color: '#333' }}>[</span>
               <span style={{ letterSpacing: -1 }}>
                 {bar.chars.split('').map((c, ci) => (
@@ -351,7 +361,7 @@ export default function MonitoringPage() {
                 {formatBytes(stats.disk.used)}/{formatBytes(stats.disk.total)}
               </span>
               <span style={{ color: '#555' }}>({pct.toFixed(1)}%)</span>
-              <span style={{ color: st.color }} title={`磁碟負載${st.label}`}>{st.glyph} {st.label}</span>
+              <span style={{ color: st.color }} title={`Disk load ${st.label}`}>{st.glyph} {st.label}</span>
             </div>
           )
         })()}
@@ -366,13 +376,13 @@ export default function MonitoringPage() {
             const loadSt = loadStatus(gpu.load)
             const memSt = loadStatus(gpu.memory_percent)
             const tempColor = gpu.temperature > 80 ? '#ef4444' : gpu.temperature > 60 ? '#f59e0b' : '#10b981'
-            const tempStatus = gpu.temperature > 80 ? { glyph: '▲', label: '過熱' } : gpu.temperature > 60 ? { glyph: '△', label: '偏高' } : { glyph: '●', label: '正常' }
+            const tempStatus = gpu.temperature > 80 ? { glyph: '▲', label: 'Hot' } : gpu.temperature > 60 ? { glyph: '△', label: 'Warm' } : { glyph: '●', label: 'Normal' }
             return (
               <div key={gpu.id}>
-                <div style={{ color: '#4c8df0', marginBottom: 2 }}>GPU{gpu.id}：{gpu.name}</div>
+                <div style={{ color: '#4c8df0', marginBottom: 2 }}>GPU{gpu.id}: {gpu.name}</div>
                 <div style={{ display: 'flex', gap: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 20 }}>
-                    <span style={{ color: '#555', width: 40 }}>負載</span>
+                    <span style={{ color: '#555', width: 40 }}>Load</span>
                     <span style={{ color: '#333' }}>[</span>
                     <span style={{ letterSpacing: -1 }}>
                       {loadBar.chars.split('').map((c, ci) => (
@@ -381,7 +391,7 @@ export default function MonitoringPage() {
                     </span>
                     <span style={{ color: '#333' }}>]</span>
                     <span style={{ color: barColor(gpu.load) }}>{gpu.load.toFixed(1)}%</span>
-                    <span style={{ color: loadSt.color }} title={`GPU 負載${loadSt.label}`}>{loadSt.glyph} {loadSt.label}</span>
+                    <span style={{ color: loadSt.color }} title={`GPU load ${loadSt.label}`}>{loadSt.glyph} {loadSt.label}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 20 }}>
                     <span style={{ color: '#555', width: 40 }}>VRAM</span>
@@ -395,9 +405,9 @@ export default function MonitoringPage() {
                     <span style={{ color: barColor(gpu.memory_percent) }}>
                       {formatBytes(gpu.memory_used * 1024 * 1024)}/{formatBytes(gpu.memory_total * 1024 * 1024)}
                     </span>
-                    <span style={{ color: memSt.color }} title={`顯示記憶體負載${memSt.label}`}>{memSt.glyph} {memSt.label}</span>
+                    <span style={{ color: memSt.color }} title={`VRAM load ${memSt.label}`}>{memSt.glyph} {memSt.label}</span>
                   </div>
-                  <span style={{ color: tempColor }} title={`GPU 溫度${tempStatus.label}`}>{tempStatus.glyph} {gpu.temperature}°C（{tempStatus.label}）</span>
+                  <span style={{ color: tempColor }} title={`GPU temp ${tempStatus.label}`}>{tempStatus.glyph} {gpu.temperature}°C ({tempStatus.label})</span>
                 </div>
               </div>
             )
@@ -408,15 +418,15 @@ export default function MonitoringPage() {
       {/* ── Sparkline Charts ── */}
       <div style={{ borderTop: '1px solid #1a2030', paddingTop: 8, marginBottom: 12 }}>
         <div style={{ color: '#555', marginBottom: 4 }}>
-          CPU 整體使用率（{stats.cpu.percent.toFixed(1)}%）— 實體核心 {stats.cpu.count_physical} / 邏輯核心 {stats.cpu.count_logical}
-          {stats.cpu.frequency_current ? `　@ ${stats.cpu.frequency_current}MHz` : ''}
+          Overall CPU usage ({stats.cpu.percent.toFixed(1)}%) — {stats.cpu.count_physical} physical / {stats.cpu.count_logical} logical cores
+          {stats.cpu.frequency_current ? ` @ ${stats.cpu.frequency_current}MHz` : ''}
         </div>
         <div style={{ background: '#0d1117', borderRadius: 4, padding: '4px 8px', marginBottom: 8 }}>
           <Sparkline
             data={overallHistory}
             color="#4c8df0"
             height={40}
-            label={`CPU 整體使用率趨勢圖，目前 ${stats.cpu.percent.toFixed(1)}%`}
+            label={`Overall CPU usage trend, currently ${stats.cpu.percent.toFixed(1)}%`}
           />
         </div>
 
@@ -427,8 +437,8 @@ export default function MonitoringPage() {
             return (
               <div key={i} style={{ background: '#0d1117', borderRadius: 4, padding: '2px 6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                  <span style={{ color: CORE_COLORS[i % CORE_COLORS.length] }}>核心 {i}</span>
-                  <span style={{ color: barColor(stats.cpu.percent_per_core[i]) }} title={`核心 ${i} 負載${st.label}`}>
+                  <span style={{ color: CORE_COLORS[i % CORE_COLORS.length] }}>Core {i}</span>
+                  <span style={{ color: barColor(stats.cpu.percent_per_core[i]) }} title={`Core ${i} load ${st.label}`}>
                     {st.glyph} {stats.cpu.percent_per_core[i].toFixed(1)}%
                   </span>
                 </div>
@@ -436,7 +446,7 @@ export default function MonitoringPage() {
                   data={hist}
                   color={CORE_COLORS[i % CORE_COLORS.length]}
                   height={24}
-                  label={`核心 ${i} 使用率趨勢圖，目前 ${stats.cpu.percent_per_core[i].toFixed(1)}%`}
+                  label={`Core ${i} usage trend, currently ${stats.cpu.percent_per_core[i].toFixed(1)}%`}
                 />
               </div>
             )
@@ -447,11 +457,12 @@ export default function MonitoringPage() {
       {/* ── Footer: Network ── */}
       <div style={{ borderTop: '1px solid #1a2030', paddingTop: 6, display: 'flex', justifyContent: 'space-between', color: '#555' }}>
         <span>
-          網路：<span style={{ color: '#10b981' }}>▲ 上傳 {formatBytes(netRateRef.current.sent)}/s</span>
+          Network: <span style={{ color: '#10b981' }}>▲ Up {formatBytes(netRateRef.current.sent)}/s</span>
           {' '}
-          <span style={{ color: '#4c8df0' }}>▼ 下載 {formatBytes(netRateRef.current.recv)}/s</span>
+          <span style={{ color: '#4c8df0' }}>▼ Down {formatBytes(netRateRef.current.recv)}/s</span>
         </span>
         <span>{uptimeLabel}</span>
+      </div>
       </div>
     </div>
   )

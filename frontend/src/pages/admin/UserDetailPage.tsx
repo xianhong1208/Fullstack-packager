@@ -43,7 +43,7 @@ export default function UserDetailPage() {
       const data = await userApi.getUser(Number(userId))
       setUser(data)
     } catch (err) {
-      message.error('載入使用者失敗')
+      message.error('Failed to load user')
       navigate('/admin/users')
     } finally {
       setIsLoading(false)
@@ -78,20 +78,20 @@ export default function UserDetailPage() {
   const handleStatusChange = async (isActive: boolean) => {
     try {
       await userApi.updateUserStatus(Number(userId), isActive)
-      message.success(`使用者已${isActive ? '啟用' : '停用'}`)
+      message.success(`User ${isActive ? 'activated' : 'deactivated'}`)
       loadUser()
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '更新狀態失敗')
+      message.error(err instanceof Error ? err.message : 'Failed to update status')
     }
   }
 
   const handleRoleChange = async (roleId: number) => {
     try {
       await userApi.updateUserRole(Number(userId), roleId)
-      message.success('角色已更新')
+      message.success('Role updated')
       loadUser()
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '更新角色失敗')
+      message.error(err instanceof Error ? err.message : 'Failed to update role')
     }
   }
 
@@ -99,13 +99,13 @@ export default function UserDetailPage() {
     let newPassword = ''
 
     Modal.confirm({
-      title: `重設 ${user?.username} 的密碼？`,
+      title: `Reset password for ${user?.username}?`,
       content: (
         <div className="mt-4">
-          <p className="text-gray-400 mb-2">請輸入新密碼：</p>
+          <p className="mb-2" style={{ color: 'var(--ink-muted)' }}>Enter a new password:</p>
           <input
             type="password"
-            placeholder="新密碼（至少 6 個字元）"
+            placeholder="New password (at least 6 characters)"
             onChange={(e) => {
               newPassword = e.target.value
             }}
@@ -113,58 +113,58 @@ export default function UserDetailPage() {
           />
         </div>
       ),
-      okText: '重設密碼',
+      okText: 'Reset password',
       onOk: async () => {
         if (newPassword.length < 6) {
-          message.error('密碼長度至少需要 6 個字元')
+          message.error('Password must be at least 6 characters')
           throw new Error('Validation error')
         }
         await userApi.resetUserPassword(Number(userId), newPassword)
-        message.success('密碼已成功重設')
+        message.success('Password reset successfully')
       },
     })
   }
 
   const historyColumns = [
     {
-      title: '時間',
+      title: 'Time',
       dataIndex: 'login_time',
       key: 'login_time',
       render: (time: string) => new Date(time).toLocaleString(),
     },
     {
-      title: '狀態',
+      title: 'Status',
       dataIndex: 'success',
       key: 'success',
       render: (success: boolean) =>
         success ? (
           <Tag color="green" icon={<CheckCircleOutlined />}>
-            成功
+            Success
           </Tag>
         ) : (
           <Tag color="red" icon={<CloseCircleOutlined />}>
-            失敗
+            Failed
           </Tag>
         ),
     },
     {
-      title: '裝置',
+      title: 'Device',
       key: 'device',
       render: (_: unknown, record: LoginHistoryItem) => (
         <span>
-          {record.browser || '未知'}
-          {record.os && <span className="text-gray-500"> ({record.os})</span>}
+          {record.browser || 'Unknown'}
+          {record.os && <span style={{ color: 'var(--ink-faint)' }}> ({record.os})</span>}
         </span>
       ),
     },
     {
-      title: 'IP 位址',
+      title: 'IP address',
       dataIndex: 'ip_address',
       key: 'ip_address',
       render: (ip: string | null) => ip || '-',
     },
     {
-      title: '失敗原因',
+      title: 'Failure reason',
       dataIndex: 'failure_reason',
       key: 'failure_reason',
       render: (reason: string | null) =>
@@ -183,7 +183,7 @@ export default function UserDetailPage() {
   if (!user) {
     return (
       <div className="p-6">
-        <Empty description="找不到使用者" />
+        <Empty description="User not found" />
       </div>
     )
   }
@@ -196,18 +196,18 @@ export default function UserDetailPage() {
       label: (
         <span className="flex items-center gap-2">
           <UserOutlined />
-          詳細資料
+          Details
         </span>
       ),
       children: (
         <Descriptions
           column={1}
-          labelStyle={{ color: '#9ca3af', width: 150 }}
-          contentStyle={{ color: '#fff' }}
+          labelStyle={{ color: 'var(--ink-faint)', width: 150 }}
+          contentStyle={{ color: 'var(--ink)' }}
         >
-          <Descriptions.Item label="使用者名稱">{user.username}</Descriptions.Item>
-          <Descriptions.Item label="電子郵件">{user.email || '-'}</Descriptions.Item>
-          <Descriptions.Item label="角色">
+          <Descriptions.Item label="Username">{user.username}</Descriptions.Item>
+          <Descriptions.Item label="Email">{user.email || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Role">
             {hasPermission('user:manage') && !isSelf ? (
               <Select
                 value={user.role?.id}
@@ -226,31 +226,31 @@ export default function UserDetailPage() {
                 {user.role.display_name}
               </Tag>
             ) : (
-              <Tag>無角色</Tag>
+              <Tag>No role</Tag>
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="狀態">
+          <Descriptions.Item label="Status">
             <Tag
               color={user.is_active ? 'green' : 'red'}
               icon={user.is_active ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
             >
-              {user.is_active ? '啟用中' : '已停用'}
+              {user.is_active ? 'Active' : 'Disabled'}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="安全問題">
+          <Descriptions.Item label="Security question">
             {user.has_security_question ? (
               <Tag color="green" icon={<CheckCircleOutlined />}>
-                已設定
+                Set
               </Tag>
             ) : (
-              <Tag color="orange">未設定</Tag>
+              <Tag color="orange">Not set</Tag>
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="建立時間">
+          <Descriptions.Item label="Created">
             {user.created_at ? new Date(user.created_at).toLocaleString() : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="最後登入">
-            {user.last_login ? new Date(user.last_login).toLocaleString() : '從未'}
+          <Descriptions.Item label="Last login">
+            {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}
           </Descriptions.Item>
         </Descriptions>
       ),
@@ -260,7 +260,7 @@ export default function UserDetailPage() {
       label: (
         <span className="flex items-center gap-2">
           <HistoryOutlined />
-          登入紀錄
+          Login history
         </span>
       ),
       children: (
@@ -277,7 +277,7 @@ export default function UserDetailPage() {
             showSizeChanger: false,
           }}
           locale={{
-            emptyText: <Empty description="沒有登入紀錄" />,
+            emptyText: <Empty description="No login history" />,
           }}
         />
       ),
@@ -287,15 +287,15 @@ export default function UserDetailPage() {
       label: (
         <span className="flex items-center gap-2">
           <SafetyCertificateOutlined />
-          權限
+          Permissions
         </span>
       ),
       children: (
         <div>
           {user.role ? (
             <div>
-              <p className="text-gray-400 mb-4">
-                權限繼承自使用者的角色：{' '}
+              <p className="mb-4" style={{ color: 'var(--ink-muted)' }}>
+                Permissions inherited from this user's role:{' '}
                 <Tag color={user.role.name === 'admin' ? 'gold' : 'blue'}>
                   {user.role.display_name}
                 </Tag>
@@ -311,7 +311,7 @@ export default function UserDetailPage() {
               </div>
             </div>
           ) : (
-            <Empty description="未指派角色，此使用者沒有任何權限" />
+            <Empty description="No role assigned — this user has no permissions" />
           )}
         </div>
       ),
@@ -319,27 +319,31 @@ export default function UserDetailPage() {
   ]
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
+      <div className="pb-4 mb-6" style={{ borderBottom: '1px solid var(--seam)' }}>
         <Link
           to="/admin/users"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-400 transition-colors mb-4"
+          className="inline-flex items-center gap-2 hover:!text-cyber-300 transition-colors mb-4"
+          style={{ color: 'var(--ink-muted)' }}
         >
           <ArrowLeftOutlined />
-          返回使用者列表
+          Back to users
         </Link>
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center">
-              <UserOutlined className="text-2xl text-gray-400" />
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{ background: 'var(--color-void-700)' }}
+            >
+              <UserOutlined className="text-2xl" style={{ color: 'var(--ink-muted)' }} />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+              <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
                 {user.username}
               </h1>
-              <p className="text-gray-400">{user.email || '無電子郵件'}</p>
+              <p style={{ color: 'var(--ink-muted)' }}>{user.email || 'No email'}</p>
             </div>
           </div>
 
@@ -348,18 +352,14 @@ export default function UserDetailPage() {
             {hasPermission('user:manage') && !isSelf && (
               <button
                 onClick={() => handleStatusChange(!user.is_active)}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  user.is_active
-                    ? 'border-alert-500/30 text-alert-400 hover:bg-alert-500/10'
-                    : 'border-matrix-500/30 text-matrix-400 hover:bg-matrix-500/10'
-                }`}
+                className={user.is_active ? 'btn-danger' : 'btn-ghost'}
               >
-                {user.is_active ? '停用' : '啟用'}
+                {user.is_active ? 'Deactivate' : 'Activate'}
               </button>
             )}
             {hasPermission('user:reset_password') && (
               <button onClick={handleResetPassword} className="btn-cyber">
-                重設密碼
+                Reset password
               </button>
             )}
           </div>

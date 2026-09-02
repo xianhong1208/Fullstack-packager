@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Progress, Button, Spin, message, Steps, Tooltip } from 'antd'
 import {
@@ -10,13 +10,12 @@ import {
   DownloadOutlined,
   WarningOutlined,
   FileZipOutlined,
-  FieldTimeOutlined,
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import LogViewer from '../components/LogViewer'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { taskApi } from '../api/client'
-import type { TaskResponse } from '../api/types'
+import type { TaskResponse, ProjectType } from '../api/types'
 import { triggerUrlDownload } from '../utils/download'
 import { STATUS_META, VERIFY_META, isTerminal } from '../utils/statusMeta'
 import { getErrorDetail } from '../utils/errors'
@@ -25,27 +24,67 @@ import { extractErrorLines } from '../utils/diagnose'
 // ── Build-stage stepper (set by nuitka_worker: preflight→compile→bundle→verify→done) ──
 const STAGE_ORDER = ['queued', 'preflight', 'compile', 'bundle', 'verify', 'done'] as const
 const STAGE_ITEMS = [
-  { title: '排隊', description: '等待建置名額' },
-  { title: '預檢', description: '檢查環境' },
-  { title: '編譯', description: 'Nuitka 編譯' },
-  { title: '打包', description: '複製依賴 / 資料' },
-  { title: '驗證', description: '啟動測試' },
+  { title: 'Queued', description: 'Waiting for a build slot' },
+  { title: 'Preflight', description: 'Checking the environment' },
+  { title: 'Compile', description: 'Nuitka compiling' },
+  { title: 'Bundle', description: 'Copying dependencies and data' },
+  { title: 'Verify', description: 'Smoke-testing the binary' },
 ]
 // Plain-language names for the stage a failure happened in. Mirrors
 // STAGE_ITEMS above, but keyed so a value coming back from the server can be
 // rendered without matching it against an index.
 const STAGE_LABELS: Record<string, string> = {
-  queued: '排隊等待',
-  preflight: '預檢（檢查路徑、Python 版本與依賴環境）',
-  compile: '編譯（Nuitka 執行中）',
-  bundle: '打包（複製依賴與資料目錄）',
-  verify: '驗證（試跑產出的執行檔）',
-  done: '收尾',
+  queued: 'Queued (waiting for a build slot)',
+  preflight: 'Preflight (checking paths, the Python version and the dependency environment)',
+  compile: 'Compile (Nuitka running)',
+  bundle: 'Bundle (copying dependencies and data directories)',
+  verify: 'Verify (smoke-testing the built binary)',
+  done: 'Finishing up',
+}
+
+const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  backend_only: 'Backend',
+  frontend_only: 'Frontend',
+  fullstack: 'Full-stack',
 }
 
 const stageIndex = (stage: string) => {
   const i = STAGE_ORDER.indexOf(stage as (typeof STAGE_ORDER)[number])
   return i < 0 ? 0 : i
+}
+
+// Human-readable duration for a seconds count.
+const fmtDuration = (secs: number): string =>
+  secs >= 60 ? `${Math.floor(secs / 60)}m ${Math.round(secs % 60)}s` : `${secs}s`
+
+// Relative time in the GitHub-Actions register ("3 minutes ago").
+const timeAgo = (iso: string): string => {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m} minute${m === 1 ? '' : 's'} ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h} hour${h === 1 ? '' : 's'} ago`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `${d} day${d === 1 ? '' : 's'} ago`
+  return new Date(iso).toLocaleDateString()
+}
+
+// A single label / value row in the config sidebar.
+function DetailRow({ label, children, mono }: { label: string; children: ReactNode; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <span className="flex-shrink-0" style={{ color: 'var(--ink-faint)' }}>
+        {label}
+      </span>
+      <span
+        className={`text-right min-w-0 truncate ${mono ? 'font-mono text-xs' : ''}`}
+        style={{ color: 'var(--ink)' }}
+      >
+        {children}
+      </span>
+    </div>
+  )
 }
 
 export default function TaskDetail() {
@@ -102,11 +141,11 @@ export default function TaskDetail() {
   const cancelMutation = useMutation({
     mutationFn: taskApi.cancel,
     onSuccess: () => {
-      message.success('已送出取消要求')
+      message.success('Cancellation request sent.')
       queryClient.invalidateQueries({ queryKey: ['task', taskId] })
     },
     onError: (err) => {
-      message.error(getErrorDetail(err, '取消任務失敗'))
+      message.error(getErrorDetail(err, 'Could not cancel the run. Please try again.'))
     },
   })
 
@@ -121,9 +160,11 @@ export default function TaskDetail() {
   if (!task) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-xl text-gray-400 mb-4">找不到此任務</h2>
+        <h2 className="text-xl mb-4" style={{ color: 'var(--ink-muted)' }}>
+          We couldn't find this build run.
+        </h2>
         <button onClick={() => navigate('/')} className="btn-cyber">
-          返回儀表板
+          Back to dashboard
         </button>
       </div>
     )
@@ -131,25 +172,126 @@ export default function TaskDetail() {
 
   const config = STATUS_META[task.status]
   const isActive = task.status === 'pending' || task.status === 'running'
-  const hasBackend = task.config.project_type === 'backend_only' || task.config.project_type === 'fullstack'
   const result = task.result
+  const hasBackend =
+    task.config.project_type === 'backend_only' || task.config.project_type === 'fullstack'
+  const hasFrontend =
+    task.config.project_type === 'frontend_only' || task.config.project_type === 'fullstack'
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* Run header — status glyph + run title + a muted meta line, GitHub-Actions style. */}
+      <div className="flex items-start gap-3 mb-6">
         <button
           onClick={() => navigate('/')}
-          aria-label="返回儀表板"
-          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          aria-label="Back to dashboard"
+          className="p-2 rounded-lg mt-0.5 transition-colors"
+          style={{ color: 'var(--ink-muted)' }}
         >
           <ArrowLeftOutlined className="text-lg" />
         </button>
-        <div>
-          <h1 className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            {task.project_name}
-          </h1>
-          <p className="text-sm text-gray-400">任務 ID:{task.id.slice(0, 8)}...</p>
+
+        <span
+          className="mt-0.5 flex-shrink-0"
+          style={{ color: config.color, fontSize: 22, display: 'inline-flex' }}
+        >
+          {config.icon}
+        </span>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1
+              className="text-xl font-semibold"
+              style={{ color: 'var(--ink)', fontFamily: 'var(--font-display)' }}
+            >
+              {task.project_name}
+            </h1>
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium uppercase"
+              style={{ backgroundColor: config.bgColor, color: config.color }}
+            >
+              {config.label}
+            </span>
+          </div>
+
+          <div
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm mt-1"
+            style={{ color: 'var(--ink-faint)' }}
+          >
+            <span>{PROJECT_TYPE_LABELS[task.config.project_type]}</span>
+            {task.config.docker_enabled && (
+              <>
+                <span aria-hidden>·</span>
+                <span>Docker</span>
+              </>
+            )}
+            <span aria-hidden>·</span>
+            <span>Triggered by {task.user_name}</span>
+            <span aria-hidden>·</span>
+            <span>Started {timeAgo(task.created_at)}</span>
+            {typeof result?.duration_seconds === 'number' && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="font-mono">{fmtDuration(result.duration_seconds)}</span>
+              </>
+            )}
+            <span className="font-mono ml-1" style={{ color: 'var(--ink-faint)' }}>
+              #{task.id.slice(0, 8)}
+            </span>
+          </div>
+        </div>
+
+        {/* Primary actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {isActive ? (
+            <Button
+              danger
+              icon={<StopOutlined />}
+              onClick={() => cancelMutation.mutate(task.id)}
+              loading={cancelMutation.isPending}
+            >
+              Cancel run
+            </Button>
+          ) : (
+            <>
+              <Button
+                icon={<RedoOutlined />}
+                onClick={() =>
+                  navigate('/create', {
+                    state: {
+                      rebuild: true,
+                      projectName: task.project_name,
+                      config: task.config,
+                    },
+                  })
+                }
+              >
+                Rebuild
+              </Button>
+              {task.status === 'completed' && (
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  loading={downloading}
+                  onClick={async () => {
+                    setDownloading(true)
+                    try {
+                      triggerUrlDownload(await taskApi.getOutputDownloadUrl(task.id))
+                      message.success('Download started.')
+                    } catch (err: unknown) {
+                      message.error(
+                        getErrorDetail(err, 'Could not download the output. Please try again.')
+                      )
+                    } finally {
+                      setDownloading(false)
+                    }
+                  }}
+                >
+                  Download output
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -168,24 +310,23 @@ export default function TaskDetail() {
       {/* Failure diagnosis callout — shown for FAILED tasks even when
           result is null, so a failed build always explains itself. */}
       {task.status === 'failed' && (
-        <div
-          className="glass-card p-5 mb-6"
-          style={{ borderLeft: '3px solid #f27d7d', background: 'rgba(239,68,68,0.06)' }}
-        >
+        <div className="glass-card p-5 mb-6 border-l-2 border-alert-500 bg-alert-500/5">
           <div className="flex items-center gap-2 mb-3">
-            <CloseCircleOutlined style={{ color: '#f27d7d' }} />
-            <h3 className="text-base font-medium text-alert-400">打包失敗</h3>
+            <CloseCircleOutlined className="text-alert-400" />
+            <h3 className="text-base font-medium text-alert-400">Build failed</h3>
           </div>
           {task.status_msg && (
-            <p className="text-sm text-gray-300 mb-3">{task.status_msg}</p>
+            <p className="text-sm mb-3" style={{ color: 'var(--ink-muted)' }}>
+              {task.status_msg}
+            </p>
           )}
 
           {/* Name the stage before the details. Someone who cannot read a
               stack trace can still act on "it failed while installing
               dependencies" — and it tells them which settings to revisit. */}
           {result?.failed_stage && (
-            <div className="text-xs text-gray-400 mb-3">
-              失敗階段：
+            <div className="text-xs mb-3" style={{ color: 'var(--ink-faint)' }}>
+              Failed stage:
               <span className="text-alert-400 ml-1">
                 {STAGE_LABELS[result.failed_stage] ?? result.failed_stage}
               </span>
@@ -195,11 +336,14 @@ export default function TaskDetail() {
           {result?.diagnosis && result.diagnosis.length > 0 ? (
             <div className="space-y-3 mb-3">
               {result.diagnosis.map((d, i) => (
-                <div key={i} className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
+                <div key={i} className="rounded-lg p-3 bg-void-950">
                   <div className="text-sm text-alert-400 font-medium mb-1">⚠ {d.problem}</div>
-                  <div className="text-sm text-cyber-200">建議：{d.suggestion}</div>
+                  <div className="text-sm text-cyber-200">Suggested fix: {d.suggestion}</div>
                   {d.evidence && (
-                    <code className="block text-xs text-gray-500 mt-1.5 font-mono break-all">
+                    <code
+                      className="block text-xs mt-1.5 font-mono break-all"
+                      style={{ color: 'var(--ink-faint)' }}
+                    >
                       {d.evidence}
                     </code>
                   )}
@@ -228,8 +372,9 @@ export default function TaskDetail() {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-500 mb-3">
-              系統無法自動判斷失敗原因，請對照下方關鍵錯誤行與右側完整日誌。
+            <p className="text-xs mb-3" style={{ color: 'var(--ink-faint)' }}>
+              We couldn't identify the cause automatically. Check the key error lines below and the
+              full log on the right.
             </p>
           )}
 
@@ -242,13 +387,17 @@ export default function TaskDetail() {
               : extractErrorLines(task.logs)
             return errLines.length > 0 ? (
               <div>
-                <div className="text-xs text-gray-500 mb-1.5 uppercase tracking-wider">關鍵錯誤行</div>
                 <div
-                  className="rounded-lg p-3 font-mono text-xs space-y-1"
-                  style={{ background: 'rgba(0,0,0,0.35)' }}
+                  className="text-xs mb-1.5 uppercase tracking-wider"
+                  style={{ color: 'var(--ink-faint)' }}
                 >
+                  Key error lines
+                </div>
+                <div className="rounded-lg p-3 font-mono text-xs space-y-1 bg-void-950">
                   {errLines.map((l, i) => (
-                    <div key={i} className="text-alert-400 break-all">{l}</div>
+                    <div key={i} className="text-alert-400 break-all">
+                      {l}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -257,36 +406,35 @@ export default function TaskDetail() {
         </div>
       )}
 
-      {/* Build result card — preflight / artifact / verify */}
+      {/* Build result panel — verification / artifact / preflight */}
       {result && (
         <div className="glass-card p-5 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-medium text-white">打包成果</h3>
-            <div className="flex items-center gap-3">
-              {typeof result.duration_seconds === 'number' && (
-                <span className="text-xs text-gray-400">
-                  <FieldTimeOutlined className="mr-1" />
-                  {result.duration_seconds >= 60
-                    ? `${Math.floor(result.duration_seconds / 60)}m ${Math.round(result.duration_seconds % 60)}s`
-                    : `${result.duration_seconds}s`}
-                </span>
-              )}
-              {result.verify && (
-                <span
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: VERIFY_META[result.verify.status].bg, color: VERIFY_META[result.verify.status].color }}
-                >
-                  {VERIFY_META[result.verify.status].icon}
-                  {VERIFY_META[result.verify.status].label}
-                </span>
-              )}
-            </div>
+            <h3 className="text-base font-medium" style={{ color: 'var(--ink)' }}>
+              Build result
+            </h3>
+            {result.verify && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: VERIFY_META[result.verify.status].bg,
+                  color: VERIFY_META[result.verify.status].color,
+                }}
+              >
+                {VERIFY_META[result.verify.status].icon}
+                {VERIFY_META[result.verify.status].label}
+              </span>
+            )}
           </div>
 
           {result.verify?.detail && (
             <div
               className="text-sm mb-4 px-3 py-2 rounded-lg"
-              style={{ background: VERIFY_META[result.verify.status].bg, color: VERIFY_META[result.verify.status].color, lineHeight: 1.6 }}
+              style={{
+                background: VERIFY_META[result.verify.status].bg,
+                color: VERIFY_META[result.verify.status].color,
+                lineHeight: 1.6,
+              }}
             >
               {result.verify.detail}
             </div>
@@ -294,23 +442,35 @@ export default function TaskDetail() {
 
           {result.artifact && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                <div className="text-xs text-gray-500 mb-1"><FileZipOutlined className="mr-1" />產物大小</div>
-                <div className="text-lg font-semibold text-cyber-300">{result.artifact.size_human}</div>
+              <div className="rounded-lg p-3 bg-void-950">
+                <div className="text-xs mb-1" style={{ color: 'var(--ink-faint)' }}>
+                  <FileZipOutlined className="mr-1" />
+                  Artifact size
+                </div>
+                <div className="text-lg font-semibold text-cyber-300">
+                  {result.artifact.size_human}
+                </div>
               </div>
-              <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                <div className="text-xs text-gray-500 mb-1">檔案數</div>
-                <div className="text-lg font-semibold text-gray-200">{result.artifact.file_count}</div>
+              <div className="rounded-lg p-3 bg-void-950">
+                <div className="text-xs mb-1" style={{ color: 'var(--ink-faint)' }}>
+                  File count
+                </div>
+                <div className="text-lg font-semibold" style={{ color: 'var(--ink)' }}>
+                  {result.artifact.file_count}
+                </div>
               </div>
               {result.artifact.sha256 && (
-                <div className="rounded-lg p-3 col-span-2" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                  <div className="text-xs text-gray-500 mb-1">SHA-256(主執行檔)</div>
-                  <Tooltip title="點擊複製完整雜湊值">
+                <div className="rounded-lg p-3 col-span-2 bg-void-950">
+                  <div className="text-xs mb-1" style={{ color: 'var(--ink-faint)' }}>
+                    SHA-256 (main binary)
+                  </div>
+                  <Tooltip title="Click to copy the full hash">
                     <code
-                      className="text-xs text-gray-300 font-mono break-all cursor-pointer hover:text-cyber-300"
+                      className="text-xs font-mono break-all cursor-pointer hover:text-cyber-300"
+                      style={{ color: 'var(--ink-muted)' }}
                       onClick={() => {
                         navigator.clipboard?.writeText(result.artifact?.sha256 || '')
-                        message.success('已複製 SHA-256')
+                        message.success('SHA-256 copied to clipboard.')
                       }}
                     >
                       {result.artifact.sha256.slice(0, 32)}…
@@ -323,15 +483,38 @@ export default function TaskDetail() {
 
           {result.preflight && result.preflight.length > 0 && (
             <div>
-              <div className="text-xs text-gray-500 mb-2 uppercase tracking-wider">打包前預檢</div>
+              <div
+                className="text-xs mb-2 uppercase tracking-wider"
+                style={{ color: 'var(--ink-faint)' }}
+              >
+                Preflight checks
+              </div>
               <div className="space-y-1.5">
                 {result.preflight.map((c) => (
                   <div key={c.label} className="flex items-start gap-2 text-sm">
-                    <span style={{ color: c.passed ? '#56d6a1' : c.critical ? '#f27d7d' : '#f0bd5e', marginTop: 2 }}>
-                      {c.passed ? <CheckCircleOutlined /> : c.critical ? <CloseCircleOutlined /> : <WarningOutlined />}
+                    <span
+                      className={
+                        c.passed ? 'text-matrix-400' : c.critical ? 'text-alert-400' : 'text-signal-400'
+                      }
+                      style={{ marginTop: 2 }}
+                    >
+                      {c.passed ? (
+                        <CheckCircleOutlined />
+                      ) : c.critical ? (
+                        <CloseCircleOutlined />
+                      ) : (
+                        <WarningOutlined />
+                      )}
                     </span>
-                    <span className="text-gray-300 w-28 flex-shrink-0">{c.label}</span>
-                    <span className="text-gray-500 text-xs flex-1" style={{ lineHeight: 1.6 }}>{c.detail}</span>
+                    <span className="w-28 flex-shrink-0" style={{ color: 'var(--ink)' }}>
+                      {c.label}
+                    </span>
+                    <span
+                      className="text-xs flex-1"
+                      style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}
+                    >
+                      {c.detail}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -339,133 +522,83 @@ export default function TaskDetail() {
           )}
 
           {result.report_file && (
-            <div className="text-xs text-gray-500 mt-4">
-              已產生編譯報告 <code className="text-gray-400">{result.report_file}</code>(已包含在下載檔內)
+            <div className="text-xs mt-4" style={{ color: 'var(--ink-faint)' }}>
+              A build report was generated:{' '}
+              <code style={{ color: 'var(--ink-muted)' }}>{result.report_file}</code> (included in the
+              download).
             </div>
           )}
         </div>
       )}
 
+      {/* Body — config sidebar + the live log stream as the focus. */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel - Task Info */}
+        {/* Config / details sidebar */}
         <div className="lg:col-span-1">
-          <div className="glass-card p-5">
-            {/* Status Badge */}
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4"
-              style={{ backgroundColor: config.bgColor, color: config.color }}
-            >
-              {config.icon}
-              <span className="text-sm font-medium uppercase">{task.status}</span>
-            </div>
-
-            {/* Progress - always show */}
-            <div className="mb-6">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-400">進度</span>
-                <span className="text-cyber-400 font-mono">{task.progress}%</span>
-              </div>
-              <Progress
-                percent={task.progress}
-                showInfo={false}
-                strokeColor={
-                  task.status === 'completed'
-                    ? '#56d6a1'
-                    : task.status === 'failed'
-                    ? '#f27d7d'
-                    : {
-                        '0%': '#3b7ad6',
-                        '100%': '#6ba6f7',
-                      }
-                }
-                trailColor="#322a20"
-              />
-              {task.status_msg && (
-                <p className="text-sm text-gray-400 mt-2">{task.status_msg}</p>
-              )}
-            </div>
-
-            {/* Details */}
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">使用者</span>
-                <span className="text-gray-300">{task.user_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">專案類型</span>
-                <span className="text-gray-300">
-                  {{ backend_only: '後端', frontend_only: '前端', fullstack: '全端' }[task.config.project_type]}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">打包模式</span>
-                <span className="text-gray-300">
-                  {{ full: 'Full', external: 'External' }[task.config.pack_mode]}
-                </span>
-              </div>
-              {task.config.docker_enabled && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Docker</span>
-                  <span className="text-gray-300">是</span>
+          <div className="glass-card p-5 space-y-5">
+            {/* Progress — while the run is active */}
+            {isActive && (
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span style={{ color: 'var(--ink-muted)' }}>Progress</span>
+                  <span className="font-mono text-cyber-400">{task.progress}%</span>
                 </div>
-              )}
+                <Progress percent={task.progress} showInfo={false} />
+                {task.status_msg && (
+                  <p className="text-sm mt-2" style={{ color: 'var(--ink-muted)' }}>
+                    {task.status_msg}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2.5 text-sm">
+              <DetailRow label="Project type">
+                {PROJECT_TYPE_LABELS[task.config.project_type]}
+              </DetailRow>
+              <DetailRow label="Pack mode">
+                {{ full: 'Full', external: 'External' }[task.config.pack_mode]}
+              </DetailRow>
+              {task.config.docker_enabled && <DetailRow label="Docker">Enabled</DetailRow>}
 
               {/* Backend settings */}
-              {(task.config.project_type === 'backend_only' || task.config.project_type === 'fullstack') && (
+              {hasBackend && (
                 <>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Python</span>
-                    <span className="text-gray-300">{task.python_version}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">進入點</span>
-                    <span className="text-gray-300 font-mono text-xs">{task.config.entry_point}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">二進位執行檔</span>
-                    <span className="text-gray-300 font-mono text-xs">{task.config.output_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">單檔執行檔</span>
-                    <span className="text-gray-300">{task.config.onefile ? '是' : '否'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">CPU 並行數</span>
-                    <span className="text-gray-300">
-                      {task.config.nuitka_jobs > 0 ? `${task.config.nuitka_jobs} 核` : '自動'}
-                    </span>
-                  </div>
+                  <DetailRow label="Python">{task.python_version}</DetailRow>
+                  <DetailRow label="Entry point" mono>
+                    {task.config.entry_point}
+                  </DetailRow>
+                  <DetailRow label="Binary name" mono>
+                    {task.config.output_name}
+                  </DetailRow>
+                  <DetailRow label="One-file binary">
+                    {task.config.onefile ? 'Yes' : 'No'}
+                  </DetailRow>
+                  <DetailRow label="CPU jobs">
+                    {task.config.nuitka_jobs > 0 ? `${task.config.nuitka_jobs} cores` : 'Auto'}
+                  </DetailRow>
                   {task.config.include_packages && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">強制納入套件</span>
-                      <span className="text-gray-300 font-mono text-xs truncate max-w-[160px]">
-                        {task.config.include_packages}
-                      </span>
-                    </div>
+                    <DetailRow label="Included packages" mono>
+                      {task.config.include_packages}
+                    </DetailRow>
                   )}
                 </>
               )}
 
               {/* Frontend settings */}
-              {(task.config.project_type === 'frontend_only' || task.config.project_type === 'fullstack') && (
+              {hasFrontend && (
                 <>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">前端目錄</span>
-                    <span className="text-gray-300 font-mono text-xs">{task.config.frontend_dir}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">建置工具</span>
-                    <span className="text-gray-300">{task.config.frontend_build_tool}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">建置指令</span>
-                    <span className="text-gray-300 font-mono text-xs">{task.config.frontend_build_command}</span>
-                  </div>
+                  <DetailRow label="Frontend dir" mono>
+                    {task.config.frontend_dir}
+                  </DetailRow>
+                  <DetailRow label="Build tool">{task.config.frontend_build_tool}</DetailRow>
+                  <DetailRow label="Build command" mono>
+                    {task.config.frontend_build_command}
+                  </DetailRow>
                   {task.config.frontend_env_content && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Env 檔</span>
-                      <span className="text-gray-300 font-mono text-xs">{task.config.frontend_env_filename}</span>
-                    </div>
+                    <DetailRow label="Env file" mono>
+                      {task.config.frontend_env_filename}
+                    </DetailRow>
                   )}
                 </>
               )}
@@ -474,128 +607,61 @@ export default function TaskDetail() {
               {task.config.docker_enabled && (
                 <>
                   {task.config.docker_image_name && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Docker Image</span>
-                      <span className="text-gray-300 font-mono text-xs">{task.config.docker_image_name}</span>
-                    </div>
+                    <DetailRow label="Docker image" mono>
+                      {task.config.docker_image_name}
+                    </DetailRow>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">基底 Image</span>
-                    <span className="text-gray-300 font-mono text-xs">{task.config.docker_base_image}</span>
-                  </div>
+                  <DetailRow label="Base image" mono>
+                    {task.config.docker_base_image}
+                  </DetailRow>
                 </>
               )}
 
-              <div className="flex justify-between">
-                <span className="text-gray-500">建立時間</span>
-                <span className="text-gray-300 text-xs">
-                  {new Date(task.created_at).toLocaleString()}
-                </span>
-              </div>
+              <DetailRow label="Created">
+                <span className="text-xs">{new Date(task.created_at).toLocaleString()}</span>
+              </DetailRow>
             </div>
-
-            {/* Cancel Button */}
-            {isActive && (
-              <Button
-                danger
-                icon={<StopOutlined />}
-                onClick={() => cancelMutation.mutate(task.id)}
-                loading={cancelMutation.isPending}
-                className="w-full mt-6"
-                style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  borderColor: 'rgba(239, 68, 68, 0.3)',
-                  color: '#f27d7d',
-                }}
-              >
-                取消任務
-              </Button>
-            )}
-
-            {/* Rebuild & Download Buttons */}
-            {!isActive && (
-              <div className="mt-6 space-y-2">
-                <Button
-                  icon={<RedoOutlined />}
-                  onClick={() =>
-                    navigate('/create', {
-                      state: {
-                        rebuild: true,
-                        projectName: task.project_name,
-                        config: task.config,
-                      },
-                    })
-                  }
-                  className="w-full"
-                  style={{
-                    background: 'rgba(76, 141, 240, 0.1)',
-                    borderColor: 'rgba(76, 141, 240, 0.3)',
-                    color: '#6ba6f7',
-                  }}
-                >
-                  重新打包
-                </Button>
-                {task.status === 'completed' && (
-                  <Button
-                    icon={<DownloadOutlined />}
-                    loading={downloading}
-                    onClick={async () => {
-                      setDownloading(true)
-                      try {
-                        triggerUrlDownload(await taskApi.getOutputDownloadUrl(task.id))
-                        message.success('已開始下載產出')
-                      } catch (err: unknown) {
-                        message.error(getErrorDetail(err, '下載產出失敗'))
-                      } finally {
-                        setDownloading(false)
-                      }
-                    }}
-                    className="w-full"
-                    style={{
-                      background: 'rgba(34, 197, 94, 0.1)',
-                      borderColor: 'rgba(34, 197, 94, 0.3)',
-                      color: '#56d6a1',
-                    }}
-                  >
-                    下載輸出
-                  </Button>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Right Panel - Logs */}
+        {/* Live log stream — the focus of the page */}
         <div className="lg:col-span-2">
-          <div className="glass-card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                建置日誌
-              </h3>
-              <span className="text-xs text-gray-500 font-mono">
-                {task.logs.length} 行
-              </span>
+          <div className="flex items-center justify-between mb-2 px-1">
+            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-faint)' }}>
+              {isActive &&
+                (wsConnected ? (
+                  <span className="inline-flex items-center gap-1.5 text-matrix-400">
+                    <span
+                      className="inline-block w-2 h-2 rounded-full"
+                      style={{ background: 'currentColor' }}
+                    />
+                    Streaming live
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-signal-400">
+                    <span
+                      className="inline-block w-2 h-2 rounded-full"
+                      style={{ background: 'currentColor' }}
+                    />
+                    Reconnecting…
+                  </span>
+                ))}
             </div>
-            {/* The stream can stop for reasons retrying cannot fix (session
-                expired, task evicted from memory). Say so — otherwise the log
-                panel just silently stops updating. */}
-            {wsStoppedReason && (
-              <div
-                className="mb-3 px-3 py-2 rounded-lg text-xs"
-                style={{
-                  background: 'rgba(234, 179, 8, 0.08)',
-                  border: '1px solid rgba(234, 179, 8, 0.25)',
-                  color: '#fde68a',
-                }}
-              >
-                即時日誌已停止：{wsStoppedReason}
-              </div>
-            )}
-            <LogViewer
-              logs={task.logs}
-              height="calc(100vh - 280px)"
-            />
+            <span className="text-xs font-mono" style={{ color: 'var(--ink-faint)' }}>
+              {task.logs.length} lines
+            </span>
           </div>
+
+          {/* The stream can stop for reasons retrying cannot fix (session
+              expired, task evicted from memory). Say so — otherwise the log
+              panel just silently stops updating. */}
+          {wsStoppedReason && (
+            <div className="mb-2 px-3 py-2 rounded-lg text-xs border bg-signal-500/10 border-signal-500/30 text-signal-400">
+              Live logs stopped: {wsStoppedReason}
+            </div>
+          )}
+
+          <LogViewer logs={task.logs} title="Build log" height="calc(100vh - 280px)" />
         </div>
       </div>
     </div>

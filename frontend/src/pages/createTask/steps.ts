@@ -15,33 +15,33 @@ export interface StepDef {
 export const ALL_STEPS: StepDef[] = [
   {
     key: 'basic',
-    title: '基本資訊',
+    title: 'Basics',
     description:
-      '先填三件事:專案名稱、要打包前端還後端、程式碼放哪(本機路徑或 Git)。只有這頁是一定要填的。',
+      'Start with three things: the project name, whether you\'re building the frontend or backend, and where the code lives (a local path or Git). This is the only required step.',
   },
   {
     key: 'backend',
-    title: '後端設定',
+    title: 'Backend',
     description:
-      '設定怎麼把 Python 編成執行檔。大多有預設值,不確定的欄位直接留空或保持預設,按「下一步」即可。',
+      'Set how Python is compiled into a binary. Most fields have defaults — leave anything you\'re unsure about blank or at its default and click Next.',
     needsBackend: true,
   },
   {
     key: 'frontend',
-    title: '前端設定',
+    title: 'Frontend',
     description:
-      '設定前端怎麼 build,以及要不要寫入 .env。可按「自動偵測」幫你帶入工具與輸出目錄。',
+      'Set how the frontend is built and whether to write a .env file. Use Auto-detect to fill in the build tool and output directory for you.',
     needsFrontend: true,
   },
   {
     key: 'docker',
     title: 'Docker',
-    description: '要不要額外輸出成 Docker image?不需要就保持「否」直接下一步。',
+    description: 'Also output a Docker image? If you don\'t need one, leave it off and continue.',
   },
   {
     key: 'review',
-    title: '確認送出',
-    description: '最後檢查一遍所有設定。按下送出後任務會立刻開始排隊。',
+    title: 'Review',
+    description: 'Check everything one more time. Once you start the build, the task is queued immediately.',
   },
 ]
 

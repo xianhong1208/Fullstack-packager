@@ -42,7 +42,7 @@ export default function RoleManagementPage() {
       setRoles(rolesData)
       setPermissions(permsData)
     } catch {
-      message.error('載入資料失敗')
+      message.error('Failed to load data')
     } finally {
       setIsLoading(false)
     }
@@ -68,18 +68,18 @@ export default function RoleManagementPage() {
 
   const handleDelete = (role: Role) => {
     Modal.confirm({
-      title: `刪除角色「${role.display_name}」？`,
-      content: '此操作無法復原。擁有此角色的使用者將需要重新指派角色。',
-      okText: '刪除',
+      title: `Delete role "${role.display_name}"?`,
+      content: 'This action cannot be undone. Users with this role will need to be reassigned.',
+      okText: 'Delete',
       okButtonProps: { danger: true },
       className: 'dark-modal',
       onOk: async () => {
         try {
           await userApi.deleteRole(role.id)
-          message.success('角色已刪除')
+          message.success('Role deleted')
           loadData()
         } catch (err) {
-          message.error(err instanceof Error ? err.message : '刪除角色失敗')
+          message.error(err instanceof Error ? err.message : 'Failed to delete role')
         }
       },
     })
@@ -101,7 +101,7 @@ export default function RoleManagementPage() {
           permission_codes: values.permission_codes,
         }
         await userApi.updateRole(editingRole.id, updateData)
-        message.success('角色已更新')
+        message.success('Role updated')
       } else {
         const createData: RoleCreate = {
           name: values.name,
@@ -111,54 +111,56 @@ export default function RoleManagementPage() {
           permission_codes: values.permission_codes || [],
         }
         await userApi.createRole(createData)
-        message.success('角色已建立')
+        message.success('Role created')
       }
       setIsModalOpen(false)
       loadData()
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '操作失敗')
+      message.error(err instanceof Error ? err.message : 'Operation failed')
     }
   }
 
   const columns: ColumnsType<Role> = [
     {
-      title: '角色',
+      title: 'Role',
       key: 'role',
       render: (_, record) => (
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            record.is_system ? 'bg-amber-500/20' : 'bg-cyber-500/20'
+            record.is_system ? 'bg-signal-500/20' : 'bg-cyber-500/20'
           }`}>
             {record.is_system ? (
-              <LockOutlined className="text-amber-400" />
+              <LockOutlined className="text-signal-400" />
             ) : (
               <TeamOutlined className="text-cyber-400" />
             )}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-white font-medium">{record.display_name}</span>
+              <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{record.display_name}</span>
               {record.is_system && (
-                <Tooltip title="系統角色，無法刪除">
-                  <Tag color="gold" className="text-xs">系統</Tag>
+                <Tooltip title="System role — cannot be deleted">
+                  <Tag color="gold" className="text-xs">System</Tag>
                 </Tooltip>
               )}
               {!record.is_active && (
-                <Tag color="red" className="text-xs">已停用</Tag>
+                <Tag color="red" className="text-xs">Disabled</Tag>
               )}
             </div>
-            <span className="text-gray-500 text-xs">{record.name}</span>
+            <span className="text-xs" style={{ color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
+              {record.name}
+            </span>
           </div>
         </div>
       ),
     },
     {
-      title: '權限',
+      title: 'Permissions',
       key: 'permissions',
       render: (_, record) => {
         const permCodes = record.permissions.map(p => p.code)
         if (permCodes.includes('*:*')) {
-          return <Tag color="gold" icon={<SafetyOutlined />}>完整存取權</Tag>
+          return <Tag color="gold" icon={<SafetyOutlined />}>Full access</Tag>
         }
         return (
           <div className="flex flex-wrap gap-1">
@@ -167,7 +169,7 @@ export default function RoleManagementPage() {
             ))}
             {record.permissions.length > 3 && (
               <Tooltip title={record.permissions.slice(3).map(p => p.code).join(', ')}>
-                <Tag className="text-xs">還有 {record.permissions.length - 3} 項</Tag>
+                <Tag className="text-xs">+{record.permissions.length - 3} more</Tag>
               </Tooltip>
             )}
           </div>
@@ -175,26 +177,26 @@ export default function RoleManagementPage() {
       },
     },
     {
-      title: '上層角色',
+      title: 'Parent role',
       key: 'parent',
       render: (_, record) => {
-        if (!record.parent_role_id) return <span className="text-gray-500">-</span>
+        if (!record.parent_role_id) return <span style={{ color: 'var(--ink-faint)' }}>-</span>
         const parent = roles.find(r => r.id === record.parent_role_id)
         return parent ? (
           <Tag color="blue">{parent.display_name}</Tag>
         ) : (
-          <span className="text-gray-500">-</span>
+          <span style={{ color: 'var(--ink-faint)' }}>-</span>
         )
       },
     },
     {
-      title: '建立時間',
+      title: 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
       render: (time: string) => new Date(time).toLocaleDateString(),
     },
     {
-      title: '操作',
+      title: 'Actions',
       key: 'actions',
       render: (_, record) => (
         <div className="flex items-center gap-2">
@@ -202,7 +204,7 @@ export default function RoleManagementPage() {
             <>
               <Button
                 type="text"
-                aria-label="編輯角色"
+                aria-label="Edit role"
                 icon={<EditOutlined />}
                 onClick={() => handleEdit(record)}
                 className="text-cyber-400 hover:text-cyber-300"
@@ -210,7 +212,7 @@ export default function RoleManagementPage() {
               {!record.is_system && (
                 <Button
                   type="text"
-                  aria-label="刪除角色"
+                  aria-label="Delete role"
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(record)}
                   className="text-alert-400 hover:text-alert-400"
@@ -224,21 +226,23 @@ export default function RoleManagementPage() {
   ]
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div>
+      {/* Page header */}
+      <div
+        className="flex flex-wrap items-start justify-between gap-4 pb-4 mb-6"
+        style={{ borderBottom: '1px solid var(--seam)' }}
+      >
         <div>
-          <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            角色管理
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+            Role management
           </h1>
-          <p className="text-gray-400 mt-1">管理角色及其權限</p>
+          <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+            Manage roles and their permissions
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={loadData}
-            className="text-gray-400"
-          >
-            重新整理
+          <Button icon={<ReloadOutlined />} onClick={loadData}>
+            Refresh
           </Button>
           {canManage && (
             <Button
@@ -246,32 +250,30 @@ export default function RoleManagementPage() {
               icon={<PlusOutlined />}
               onClick={handleCreate}
             >
-              建立角色
+              Add role
             </Button>
           )}
         </div>
       </div>
 
-      {/* Roles Table */}
-      <div className="glass-card p-4">
-        <Table
-          dataSource={roles}
-          columns={columns}
-          rowKey="id"
-          loading={{
-            spinning: isLoading,
-            indicator: <LoadingOutlined className="text-cyber-400" />,
-          }}
-          pagination={false}
-          locale={{
-            emptyText: <Empty description="找不到角色" />,
-          }}
-        />
-      </div>
+      {/* Roles table */}
+      <Table
+        dataSource={roles}
+        columns={columns}
+        rowKey="id"
+        loading={{
+          spinning: isLoading,
+          indicator: <LoadingOutlined className="text-cyber-400" />,
+        }}
+        pagination={false}
+        locale={{
+          emptyText: <Empty description="No roles found" />,
+        }}
+      />
 
       {/* Create/Edit Modal */}
       <Modal
-        title={editingRole ? `編輯角色：${editingRole.display_name}` : '建立新角色'}
+        title={editingRole ? `Edit role: ${editingRole.display_name}` : 'Create role'}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
@@ -287,43 +289,43 @@ export default function RoleManagementPage() {
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
               name="name"
-              label="角色名稱（ID）"
+              label="Role name (ID)"
               rules={[
-                { required: true, message: '請輸入角色名稱' },
-                { pattern: /^[a-z][a-z0-9_]*$/, message: '僅限小寫字母、數字與底線' },
+                { required: true, message: 'Enter a role name' },
+                { pattern: /^[a-z][a-z0-9_]*$/, message: 'Lowercase letters, numbers, and underscores only' },
               ]}
             >
               <Input
-                placeholder="例如：moderator"
+                placeholder="e.g. moderator"
                 disabled={!!editingRole}
               />
             </Form.Item>
 
             <Form.Item
               name="display_name"
-              label="顯示名稱"
-              rules={[{ required: true, message: '請輸入顯示名稱' }]}
+              label="Display name"
+              rules={[{ required: true, message: 'Enter a display name' }]}
             >
-              <Input placeholder="例如：版主" />
+              <Input placeholder="e.g. Moderator" />
             </Form.Item>
           </div>
 
           <Form.Item
             name="description"
-            label="描述"
+            label="Description"
           >
             <Input.TextArea
-              placeholder="角色描述..."
+              placeholder="Role description..."
               rows={2}
             />
           </Form.Item>
 
           <Form.Item
             name="parent_role_id"
-            label="上層角色（繼承其權限）"
+            label="Parent role (inherits its permissions)"
           >
             <Select
-              placeholder="選擇上層角色（選填）"
+              placeholder="Select a parent role (optional)"
               allowClear
               options={roles
                 .filter(r => r.id !== editingRole?.id)
@@ -333,12 +335,12 @@ export default function RoleManagementPage() {
 
           <Form.Item
             name="permission_codes"
-            label="權限"
+            label="Permissions"
           >
-            <div className="max-h-64 overflow-y-auto border border-gray-700 rounded-lg p-4">
+            <div className="max-h-64 overflow-y-auto rounded-lg p-4" style={{ border: '1px solid var(--color-void-700)' }}>
               {permissions.map(category => (
                 <div key={category.category} className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-300 mb-2 capitalize">
+                  <h4 className="text-sm font-medium mb-2 capitalize" style={{ color: 'var(--ink-muted)' }}>
                     {category.category}
                   </h4>
                   <Form.Item name="permission_codes" noStyle>
@@ -346,7 +348,7 @@ export default function RoleManagementPage() {
                       {category.permissions.map(perm => (
                         <Checkbox key={perm.code} value={perm.code}>
                           <Tooltip title={perm.description}>
-                            <span className="text-gray-400">{perm.name}</span>
+                            <span style={{ color: 'var(--ink-muted)' }}>{perm.name}</span>
                           </Tooltip>
                         </Checkbox>
                       ))}
@@ -359,10 +361,10 @@ export default function RoleManagementPage() {
 
           <div className="flex justify-end gap-2 mt-6">
             <Button onClick={() => setIsModalOpen(false)}>
-              取消
+              Cancel
             </Button>
             <Button type="primary" htmlType="submit">
-              {editingRole ? '更新' : '建立'}
+              {editingRole ? 'Update' : 'Create'}
             </Button>
           </div>
         </Form>

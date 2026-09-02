@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { message, Modal, Table, Tag, Tabs, Empty, Popconfirm } from 'antd'
+import { message, Modal, Table, Tag, Empty, Popconfirm } from 'antd'
 import {
   LockOutlined,
   QuestionCircleOutlined,
@@ -16,6 +16,35 @@ import {
 import { authApi } from '../api/authApi'
 import type { LoginHistoryItem, Session } from '../api/types'
 import { useAuth } from '../contexts/AuthContext'
+
+// A grouped settings panel: a titled header row with an icon and optional
+// description, then the section body. Keeps every section visually consistent.
+function SectionCard({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: React.ReactNode
+  title: string
+  description?: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="glass-card p-6">
+      <div className="flex items-start gap-3 pb-4 mb-5 border-b border-[var(--seam)]">
+        <span className="mt-0.5 text-lg text-cyber-400">{icon}</span>
+        <div>
+          <h2 className="text-lg font-semibold text-[var(--ink)]" style={{ fontFamily: 'var(--font-display)' }}>
+            {title}
+          </h2>
+          {description && <p className="mt-0.5 text-sm text-[var(--ink-muted)]">{description}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  )
+}
 
 export default function SecuritySettingsPage() {
   const { user, logoutAllDevices } = useAuth()
@@ -56,7 +85,7 @@ export default function SecuritySettingsPage() {
       setHistoryTotal(data.total)
       setHistoryPage(page)
     } catch (err) {
-      message.error('載入登入紀錄失敗')
+      message.error('Could not load your login history.')
     } finally {
       setIsLoadingHistory(false)
     }
@@ -68,7 +97,7 @@ export default function SecuritySettingsPage() {
       const data = await authApi.getActiveSessions()
       setSessions(data.sessions)
     } catch (err) {
-      message.error('載入使用中的工作階段失敗')
+      message.error('Could not load your active sessions.')
     } finally {
       setIsLoadingSessions(false)
     }
@@ -78,24 +107,24 @@ export default function SecuritySettingsPage() {
     e.preventDefault()
 
     if (newPassword.length < 6) {
-      message.error('新密碼長度至少需要 6 個字元')
+      message.error('Your new password must be at least 6 characters.')
       return
     }
 
     if (newPassword !== confirmPassword) {
-      message.error('兩次輸入的密碼不一致')
+      message.error('The passwords do not match. Re-enter them.')
       return
     }
 
     setIsChangingPassword(true)
     try {
       await authApi.changePassword(currentPassword, newPassword)
-      message.success('密碼已成功變更')
+      message.success('Your password has been changed.')
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '變更密碼失敗')
+      message.error(err instanceof Error ? err.message : 'Could not change your password.')
     } finally {
       setIsChangingPassword(false)
     }
@@ -105,12 +134,12 @@ export default function SecuritySettingsPage() {
     e.preventDefault()
 
     if (securityQuestion.length < 10) {
-      message.error('安全問題長度至少需要 10 個字元')
+      message.error('Your security question must be at least 10 characters.')
       return
     }
 
     if (!securityAnswer.trim()) {
-      message.error('請提供答案')
+      message.error('Enter an answer.')
       return
     }
 
@@ -120,11 +149,11 @@ export default function SecuritySettingsPage() {
         question: securityQuestion,
         answer: securityAnswer,
       })
-      message.success('安全問題已成功設定')
+      message.success('Your security question has been saved.')
       setSecurityQuestion('')
       setSecurityAnswer('')
     } catch (err) {
-      message.error(err instanceof Error ? err.message : '設定安全問題失敗')
+      message.error(err instanceof Error ? err.message : 'Could not save your security question.')
     } finally {
       setIsSettingQuestion(false)
     }
@@ -133,19 +162,19 @@ export default function SecuritySettingsPage() {
   const handleRevokeSession = async (sessionId: number) => {
     try {
       await authApi.revokeSession(sessionId)
-      message.success('已撤銷工作階段')
+      message.success('Session revoked.')
       loadSessions()
     } catch (err) {
-      message.error('撤銷工作階段失敗')
+      message.error('Could not revoke the session.')
     }
   }
 
   const handleLogoutAllDevices = () => {
     Modal.confirm({
-      title: '從所有裝置登出？',
+      title: 'Sign out of all devices?',
       icon: <ExclamationCircleOutlined />,
-      content: '這將撤銷所有使用中的工作階段（包含目前這個），您需要重新登入。',
-      okText: '全部登出',
+      content: 'This revokes every active session, including this one, and you will need to sign in again.',
+      okText: 'Sign out all',
       okType: 'danger',
       onOk: async () => {
         await logoutAllDevices()
@@ -167,170 +196,161 @@ export default function SecuritySettingsPage() {
 
   const historyColumns = [
     {
-      title: '時間',
+      title: 'Time',
       dataIndex: 'login_time',
       key: 'login_time',
       render: (time: string) => new Date(time).toLocaleString(),
     },
     {
-      title: '狀態',
+      title: 'Status',
       dataIndex: 'success',
       key: 'success',
       render: (success: boolean) =>
         success ? (
           <Tag color="green" icon={<CheckCircleOutlined />}>
-            成功
+            Success
           </Tag>
         ) : (
           <Tag color="red" icon={<CloseCircleOutlined />}>
-            失敗
+            Failed
           </Tag>
         ),
     },
     {
-      title: '裝置',
+      title: 'Device',
       key: 'device',
       render: (_: unknown, record: LoginHistoryItem) => (
         <span className="flex items-center gap-2">
           {getDeviceIcon(record.device_type)}
-          <span>{record.browser || '未知'}</span>
-          {record.os && <span className="text-gray-500">({record.os})</span>}
+          <span>{record.browser || 'Unknown'}</span>
+          {record.os && <span className="text-[var(--ink-faint)]">({record.os})</span>}
         </span>
       ),
     },
     {
-      title: 'IP 位址',
+      title: 'IP address',
       dataIndex: 'ip_address',
       key: 'ip_address',
       render: (ip: string | null) => ip || '-',
     },
   ]
 
-  const tabItems = [
-    {
-      key: 'password',
-      label: (
-        <span className="flex items-center gap-2">
-          <LockOutlined />
-          變更密碼
-        </span>
-      ),
-      children: (
-        <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
-          <div>
-            <label htmlFor="security-current-password" className="block text-sm text-gray-400 mb-2">目前密碼</label>
-            <input
-              id="security-current-password"
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="input-field"
-              placeholder="請輸入目前密碼"
-              autoComplete="current-password"
-            />
-          </div>
-          <div>
-            <label htmlFor="security-new-password" className="block text-sm text-gray-400 mb-2">新密碼</label>
-            <input
-              id="security-new-password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="input-field"
-              placeholder="請輸入新密碼（至少 6 個字元）"
-              autoComplete="new-password"
-            />
-          </div>
-          <div>
-            <label htmlFor="security-confirm-password" className="block text-sm text-gray-400 mb-2">確認新密碼</label>
-            <input
-              id="security-confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input-field"
-              placeholder="請再次輸入新密碼"
-              autoComplete="new-password"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isChangingPassword}
-            className="btn-cyber flex items-center gap-2"
-          >
-            {isChangingPassword && <LoadingOutlined className="animate-spin" />}
-            變更密碼
-          </button>
-        </form>
-      ),
-    },
-    {
-      key: 'security_question',
-      label: (
-        <span className="flex items-center gap-2">
-          <QuestionCircleOutlined />
-          安全問題
-        </span>
-      ),
-      children: (
-        <div className="max-w-md space-y-4">
-          {user?.has_security_question && (
-            <div className="p-3 rounded-lg bg-matrix-500/10 border border-matrix-500/30 text-matrix-400 text-sm mb-4">
-              <CheckCircleOutlined className="mr-2" />
-              您已設定安全問題，可於下方進行更新。
-            </div>
-          )}
-          <form onSubmit={handleSetSecurityQuestion} className="space-y-4">
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-[var(--ink)]" style={{ fontFamily: 'var(--font-display)' }}>
+          Security settings
+        </h1>
+        <p className="mt-1 text-[var(--ink-muted)]">Manage your account security and active sessions</p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Change password */}
+        <SectionCard icon={<LockOutlined />} title="Change password">
+          <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
             <div>
-              <label htmlFor="security-question" className="block text-sm text-gray-400 mb-2">安全問題</label>
+              <label htmlFor="security-current-password" className="block text-sm text-[var(--ink-muted)] mb-2">Current password</label>
               <input
-                id="security-question"
-                type="text"
-                value={securityQuestion}
-                onChange={(e) => setSecurityQuestion(e.target.value)}
+                id="security-current-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
                 className="input-field"
-                placeholder="例如：您第一隻寵物的名字是什麼？"
+                placeholder="Enter your current password"
+                autoComplete="current-password"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                此問題將用於在您重設密碼時驗證身分。
-              </p>
             </div>
             <div>
-              <label htmlFor="security-answer" className="block text-sm text-gray-400 mb-2">答案</label>
+              <label htmlFor="security-new-password" className="block text-sm text-[var(--ink-muted)] mb-2">New password</label>
               <input
-                id="security-answer"
-                type="text"
-                value={securityAnswer}
-                onChange={(e) => setSecurityAnswer(e.target.value)}
+                id="security-new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 className="input-field"
-                placeholder="請輸入您的答案"
+                placeholder="Enter a new password (at least 6 characters)"
+                autoComplete="new-password"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                答案不區分大小寫，並會自動去除前後空白。
-              </p>
+            </div>
+            <div>
+              <label htmlFor="security-confirm-password" className="block text-sm text-[var(--ink-muted)] mb-2">Confirm new password</label>
+              <input
+                id="security-confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="input-field"
+                placeholder="Re-enter your new password"
+                autoComplete="new-password"
+              />
             </div>
             <button
               type="submit"
-              disabled={isSettingQuestion}
-              className="btn-cyber flex items-center gap-2"
+              disabled={isChangingPassword}
+              className="btn-cyber flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber-300"
             >
-              {isSettingQuestion && <LoadingOutlined className="animate-spin" />}
-              {user?.has_security_question ? '更新安全問題' : '設定安全問題'}
+              {isChangingPassword && <LoadingOutlined className="animate-spin" />}
+              Change password
             </button>
           </form>
-        </div>
-      ),
-    },
-    {
-      key: 'login_history',
-      label: (
-        <span className="flex items-center gap-2">
-          <HistoryOutlined />
-          登入紀錄
-        </span>
-      ),
-      children: (
-        <div>
+        </SectionCard>
+
+        {/* Security question */}
+        <SectionCard
+          icon={<QuestionCircleOutlined />}
+          title="Security question"
+          description="Used to verify your identity when you reset your password."
+        >
+          <div className="max-w-md space-y-4">
+            {user?.has_security_question && (
+              <div className="p-3 rounded-lg bg-matrix-500/10 border border-matrix-500/30 text-matrix-400 text-sm">
+                <CheckCircleOutlined className="mr-2" />
+                You have a security question set. You can update it below.
+              </div>
+            )}
+            <form onSubmit={handleSetSecurityQuestion} className="space-y-4">
+              <div>
+                <label htmlFor="security-question" className="block text-sm text-[var(--ink-muted)] mb-2">Security question</label>
+                <input
+                  id="security-question"
+                  type="text"
+                  value={securityQuestion}
+                  onChange={(e) => setSecurityQuestion(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g. What was the name of your first pet?"
+                />
+                <p className="text-xs text-[var(--ink-faint)] mt-1">
+                  This question is used to verify your identity when you reset your password.
+                </p>
+              </div>
+              <div>
+                <label htmlFor="security-answer" className="block text-sm text-[var(--ink-muted)] mb-2">Answer</label>
+                <input
+                  id="security-answer"
+                  type="text"
+                  value={securityAnswer}
+                  onChange={(e) => setSecurityAnswer(e.target.value)}
+                  className="input-field"
+                  placeholder="Enter your answer"
+                />
+                <p className="text-xs text-[var(--ink-faint)] mt-1">
+                  Answers are case-insensitive, and leading and trailing spaces are ignored.
+                </p>
+              </div>
+              <button
+                type="submit"
+                disabled={isSettingQuestion}
+                className="btn-cyber flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyber-300"
+              >
+                {isSettingQuestion && <LoadingOutlined className="animate-spin" />}
+                {user?.has_security_question ? 'Update security question' : 'Set security question'}
+              </button>
+            </form>
+          </div>
+        </SectionCard>
+
+        {/* Login history */}
+        <SectionCard icon={<HistoryOutlined />} title="Login history">
           <Table
             dataSource={loginHistory}
             columns={historyColumns}
@@ -344,117 +364,96 @@ export default function SecuritySettingsPage() {
               showSizeChanger: false,
             }}
             locale={{
-              emptyText: <Empty description="沒有登入紀錄" />,
+              emptyText: <Empty description="No login history yet" />,
             }}
           />
-        </div>
-      ),
-    },
-    {
-      key: 'sessions',
-      label: (
-        <span className="flex items-center gap-2">
-          <DesktopOutlined />
-          使用中的工作階段
-        </span>
-      ),
-      children: (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-gray-400 text-sm">
-              管理您在所有裝置上使用中的工作階段。
-            </p>
-            <button
-              onClick={handleLogoutAllDevices}
-              className="text-alert-400 hover:text-alert-400 text-sm"
-            >
-              從所有裝置登出
-            </button>
-          </div>
+        </SectionCard>
 
-          {isLoadingSessions ? (
-            <div className="flex justify-center py-8">
-              <LoadingOutlined className="text-2xl text-cyber-400" />
+        {/* Active sessions */}
+        <SectionCard
+          icon={<DesktopOutlined />}
+          title="Active sessions"
+          description="Manage the sessions signed in across your devices."
+        >
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button
+                onClick={handleLogoutAllDevices}
+                className="text-alert-400 hover:text-alert-500 text-sm transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-alert-500/60"
+              >
+                Sign out of all devices
+              </button>
             </div>
-          ) : sessions.length === 0 ? (
-            <Empty description="沒有使用中的工作階段" />
-          ) : (
-            <div className="space-y-3">
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className={`p-4 rounded-lg border ${
-                    session.is_current
-                      ? 'bg-cyber-500/10 border-cyber-500/30'
-                      : 'bg-gray-800/50 border-gray-700'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-start gap-3">
-                      <div className="text-gray-400 mt-1">
-                        <DesktopOutlined className="text-lg" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white">
-                            {session.device_info || '未知裝置'}
-                          </span>
-                          {session.is_current && (
-                            <Tag color="cyan" className="text-xs">
-                              目前
-                            </Tag>
-                          )}
-                          {session.is_remember_me && (
-                            <Tag color="blue" className="text-xs">
-                              記住我
-                            </Tag>
-                          )}
+
+            {isLoadingSessions ? (
+              <div className="flex justify-center py-8">
+                <LoadingOutlined className="text-2xl text-cyber-400" />
+              </div>
+            ) : sessions.length === 0 ? (
+              <Empty description="No active sessions" />
+            ) : (
+              <div className="space-y-3">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className={`p-4 rounded-lg border ${
+                      session.is_current
+                        ? 'bg-cyber-500/10 border-cyber-500/30'
+                        : 'bg-void-800/50 border-void-700'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start gap-3">
+                        <div className="text-[var(--ink-muted)] mt-1">
+                          <DesktopOutlined className="text-lg" />
                         </div>
-                        <p className="text-gray-500 text-sm mt-1">
-                          IP：{session.ip_address || '未知'}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          建立時間：{new Date(session.created_at).toLocaleString()}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          到期時間：{new Date(session.expires_at).toLocaleString()}
-                        </p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[var(--ink)]">
+                              {session.device_info || 'Unknown device'}
+                            </span>
+                            {session.is_current && (
+                              <Tag color="cyan" className="text-xs">
+                                Current
+                              </Tag>
+                            )}
+                            {session.is_remember_me && (
+                              <Tag color="blue" className="text-xs">
+                                Remember me
+                              </Tag>
+                            )}
+                          </div>
+                          <p className="text-[var(--ink-faint)] text-sm mt-1">
+                            IP: {session.ip_address || 'Unknown'}
+                          </p>
+                          <p className="text-[var(--ink-faint)] text-sm">
+                            Created: {new Date(session.created_at).toLocaleString()}
+                          </p>
+                          <p className="text-[var(--ink-faint)] text-sm">
+                            Expires: {new Date(session.expires_at).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
+                      {!session.is_current && (
+                        <Popconfirm
+                          title="Revoke this session?"
+                          description="That device will be signed out."
+                          onConfirm={() => handleRevokeSession(session.id)}
+                          okText="Revoke"
+                          cancelText="Cancel"
+                        >
+                          <button aria-label="Revoke this session" className="text-[var(--ink-muted)] hover:text-alert-400 transition-colors">
+                            <DeleteOutlined />
+                          </button>
+                        </Popconfirm>
+                      )}
                     </div>
-                    {!session.is_current && (
-                      <Popconfirm
-                        title="撤銷此工作階段？"
-                        description="該裝置將會被登出。"
-                        onConfirm={() => handleRevokeSession(session.id)}
-                        okText="撤銷"
-                        cancelText="取消"
-                      >
-                        <button aria-label="撤銷此工作階段" className="text-gray-400 hover:text-alert-400 transition-colors">
-                          <DeleteOutlined />
-                        </button>
-                      </Popconfirm>
-                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ),
-    },
-  ]
-
-  return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-          安全設定
-        </h1>
-        <p className="text-gray-400 mt-1">管理您的帳號安全與使用中的工作階段</p>
-      </div>
-
-      <div className="glass-card p-6">
-        <Tabs items={tabItems} />
+                ))}
+              </div>
+            )}
+          </div>
+        </SectionCard>
       </div>
     </div>
   )

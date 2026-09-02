@@ -17,8 +17,8 @@ function axiosErrorWith(data: unknown, message = 'Request failed'): AxiosError {
 
 describe('getErrorDetail', () => {
   it('prefers the backend detail over the generic fallback', () => {
-    const err = axiosErrorWith({ detail: '下載連結已失效。請回到 Build Center 重新點一次下載' })
-    expect(getErrorDetail(err, '下載失敗')).toContain('已失效')
+    const err = axiosErrorWith({ detail: 'The download link expired. Go back to Build Center and click download again.' })
+    expect(getErrorDetail(err, 'Download failed')).toContain('expired')
   })
 
   it('unwraps pydantic validation errors', () => {
@@ -44,9 +44,9 @@ describe('getErrorDetail', () => {
 
   it('uses the caller fallback for values that are not errors at all', () => {
     // Rejected promises can carry anything; a toast still has to say something.
-    expect(getErrorDetail(undefined, '下載產出失敗')).toBe('下載產出失敗')
-    expect(getErrorDetail({ weird: true }, '下載產出失敗')).toBe('下載產出失敗')
-    expect(getErrorDetail('a string', '下載產出失敗')).toBe('下載產出失敗')
+    expect(getErrorDetail(undefined, 'Could not download the output')).toBe('Could not download the output')
+    expect(getErrorDetail({ weird: true }, 'Could not download the output')).toBe('Could not download the output')
+    expect(getErrorDetail('a string', 'Could not download the output')).toBe('Could not download the output')
   })
 
   it('has a default fallback so a call site cannot produce an empty message', () => {

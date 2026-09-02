@@ -8,7 +8,7 @@ import { AxiosError } from 'axios'
  * showed the backend detail (download, git ops) while others showed only a
  * hard-coded "Failed to load X", hiding the real cause.
  */
-export function getErrorDetail(err: unknown, fallback = '操作失敗，請稍後再試'): string {
+export function getErrorDetail(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
   if (err instanceof AxiosError) {
     const detail = err.response?.data?.detail
     if (typeof detail === 'string' && detail.trim()) return detail

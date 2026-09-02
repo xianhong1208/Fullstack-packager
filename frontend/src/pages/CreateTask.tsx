@@ -15,8 +15,6 @@ import {
   Tag,
   Tooltip,
   InputNumber,
-  Card,
-  Divider,
   AutoComplete,
   Collapse,
   Steps,
@@ -105,7 +103,7 @@ export default function CreateTask() {
 
   const clearDraft = useCallback(() => {
     clearDraftStorage()
-    message.success('已清除草稿')
+    message.success('Draft cleared')
   }, [clearDraftStorage])
 
   // Directory selection state
@@ -206,7 +204,7 @@ export default function CreateTask() {
       setCpuCount(info.cpu_count)
       if (info.python_versions?.length) setPythonVersions(info.python_versions)
       if (info.git_workspace_dir) setWorkspaceDir(info.git_workspace_dir)
-    }).catch((e) => console.warn('系統資訊載入失敗，改用預設值', e))
+    }).catch((e) => console.warn('Could not load system info; using defaults', e))
   }, [])
 
   // Restore selected directories from rebuild config
@@ -292,9 +290,9 @@ export default function CreateTask() {
       const cached = gitEnvFilesContent[envFilename]
       if (cached !== undefined) {
         form.setFieldValue('frontend_env_content', cached)
-        message.success(`已從 Git repo 載入 ${envFilename}`)
+        message.success(`Loaded ${envFilename} from the Git repo`)
       } else {
-        message.info(`Git repo 中找不到 ${envFilename}`)
+        message.info(`${envFilename} not found in the Git repo`)
       }
       return
     }
@@ -302,20 +300,20 @@ export default function CreateTask() {
     // Local mode: read from filesystem via the existing API.
     const fullPath = getFrontendFullPath()
     if (!fullPath) {
-      message.warning('請先輸入專案路徑')
+      message.warning('Enter the project path first')
       return
     }
     setLoadingEnv(true)
     try {
       const result = await taskApi.readEnvFile(fullPath, envFilename)
       form.setFieldValue('frontend_env_content', result.content)
-      message.success(`已從專案載入 ${envFilename}`)
+      message.success(`Loaded ${envFilename} from the project`)
     } catch (err: unknown) {
       const error = err as { response?: { status?: number; data?: { detail?: string } } }
       if (error.response?.status === 404) {
-        message.info(`${fullPath} 內找不到 ${envFilename}`)
+        message.info(`${envFilename} not found in ${fullPath}`)
       } else {
-        message.error(error.response?.data?.detail || '載入 env 檔失敗')
+        message.error(error.response?.data?.detail || 'Could not load the env file')
       }
     } finally {
       setLoadingEnv(false)
@@ -326,7 +324,7 @@ export default function CreateTask() {
     const path = form.getFieldValue('project_path')
     const frontendDir = form.getFieldValue('frontend_dir') || '.'
     if (!path) {
-      if (!silent) message.warning('請先輸入專案路徑')
+      if (!silent) message.warning('Enter the project path first')
       return
     }
     const fullPath = frontendDir === '.' ? path : `${path}/${frontendDir}`
@@ -334,7 +332,7 @@ export default function CreateTask() {
     try {
       const config = await taskApi.detectFrontendConfig(fullPath)
       if (!config.detected) {
-        if (!silent) message.info('這個目錄內沒有偵測到前端設定')
+        if (!silent) message.info('No frontend config detected in this directory')
         return
       }
       const updates: Record<string, string> = {}
@@ -344,19 +342,19 @@ export default function CreateTask() {
       if (Object.keys(updates).length > 0) form.setFieldsValue(updates)
       if (!silent) {
         const parts: string[] = []
-        if (config.has_vite_config) parts.push('Vite 設定')
-        if (config.build_tool) parts.push(`工具：${config.build_tool}`)
-        if (config.build_command) parts.push(`指令：${config.build_command}`)
-        if (config.output_dir) parts.push(`輸出：${config.output_dir}`)
-        message.success(`偵測結果：${parts.join('、')}`)
+        if (config.has_vite_config) parts.push('Vite config')
+        if (config.build_tool) parts.push(`tool: ${config.build_tool}`)
+        if (config.build_command) parts.push(`command: ${config.build_command}`)
+        if (config.output_dir) parts.push(`output: ${config.output_dir}`)
+        message.success(`Detected ${parts.join(', ')}`)
       }
     } catch (err: unknown) {
       if (!silent) {
         const error = err as { response?: { status?: number; data?: { detail?: string } } }
         if (error.response?.status === 404) {
-          message.info('找不到前端目錄')
+          message.info('Frontend directory not found')
         } else {
-          message.error(error.response?.data?.detail || '偵測前端設定失敗')
+          message.error(error.response?.data?.detail || 'Could not detect the frontend config')
         }
       }
     } finally {
@@ -367,7 +365,7 @@ export default function CreateTask() {
   const createMutation = useMutation({
     mutationFn: taskApi.create,
     onSuccess: (task) => {
-      message.success('任務建立成功！')
+      message.success('Build started')
       // Draft has been consumed by a successful submit — clear it so the
       // next visit starts clean.
       clearDraftStorage()
@@ -377,8 +375,8 @@ export default function CreateTask() {
     },
     onError: (error: Error) => {
       notification.error({
-        message: '建立任務失敗',
-        description: error.message || '請檢查設定後再試一次',
+        message: 'Could not start the build',
+        description: error.message || 'Check your settings and try again',
         duration: 6,
       })
     },
@@ -400,7 +398,7 @@ export default function CreateTask() {
       setSelectedDirs((prev) => prev.filter((d) => result.directories.includes(d)))
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } }
-      setDirError(error.response?.data?.detail || '載入目錄清單失敗')
+      setDirError(error.response?.data?.detail || 'Could not load the directory list')
       setDirectories([])
     } finally {
       setLoadingDirs(false)
@@ -460,13 +458,13 @@ export default function CreateTask() {
         const e = err as { response?: { status?: number; data?: { detail?: string } } }
         setGitRefs({ branches: [], tags: [] })
         notification.error({
-          message: '取得分支 / 標籤失敗',
+          message: 'Could not load branches or tags',
           description:
             e.response?.data?.detail
-            ?? '請確認 URL 是否正確，以及伺服器端的 GITLAB_TOKEN 是否已設定。',
+            ?? 'Check that the URL is correct and that GITLAB_TOKEN is set on the server.',
           btn: (
             <Button size="small" type="primary" onClick={() => { void fetchGitRefs(url) }}>
-              重試
+              Retry
             </Button>
           ),
           duration: 0,
@@ -518,13 +516,13 @@ export default function CreateTask() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } }
       notification.error({
-        message: '掃描 Repo 結構失敗',
+        message: 'Could not scan the repo structure',
         description:
           e.response?.data?.detail
-          ?? '請確認 Git URL 與分支 / 標籤是否正確，以及伺服器是否有權限存取此 repo。',
+          ?? 'Check that the Git URL and branch or tag are correct, and that the server can access this repo.',
         btn: (
           <Button size="small" type="primary" onClick={() => { void handleScanGitTree() }}>
-            重試
+            Retry
           </Button>
         ),
         duration: 0,
@@ -580,13 +578,13 @@ export default function CreateTask() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } }
       notification.error({
-        message: '偵測前端設定失敗',
+        message: 'Could not detect the frontend config',
         description:
           e.response?.data?.detail
-          ?? '請確認 Git URL、分支 / 標籤、以及前端目錄是否正確。',
+          ?? 'Check that the Git URL, branch or tag, and frontend directory are correct.',
         btn: (
           <Button size="small" type="primary" onClick={() => { void handlePreviewGitFrontend() }}>
-            重試
+            Retry
           </Button>
         ),
         duration: 0,
@@ -690,18 +688,18 @@ export default function CreateTask() {
     if (!info) return null
     const roleTag =
       info.role === 'source' ? (
-        <Tag color="cyan" style={{ marginInlineEnd: 4 }}>程式碼</Tag>
+        <Tag color="cyan" style={{ marginInlineEnd: 4 }}>Code</Tag>
       ) : info.role === 'data' ? (
-        <Tag color="green" style={{ marginInlineEnd: 4 }}>資料</Tag>
+        <Tag color="green" style={{ marginInlineEnd: 4 }}>Data</Tag>
       ) : (
-        <Tag style={{ marginInlineEnd: 4 }}>略過</Tag>
+        <Tag style={{ marginInlineEnd: 4 }}>Skip</Tag>
       )
     return (
       <span className="ml-1 inline-flex items-center align-middle">
         <Tooltip title={info.reason}>{roleTag}</Tooltip>
         {info.imported_by_entry && (
           <Tooltip title={info.reason}>
-            <Tag color="gold" style={{ marginInlineEnd: 0 }}>主程式有用到</Tag>
+            <Tag color="gold" style={{ marginInlineEnd: 0 }}>Used by entry point</Tag>
           </Tooltip>
         )}
       </span>
@@ -802,16 +800,25 @@ export default function CreateTask() {
     }
   }
 
-  // ── Shared styles ──
-  const cardStyle = { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(100,100,100,0.3)' }
-  const cardHeaderStyle = { borderBottom: '1px solid rgba(100,100,100,0.3)' }
-  const dividerStyle = { borderColor: 'rgba(100,100,100,0.3)', margin: '12px 0' }
+  // ── Section panel header (flat, hairline seam under the title) ──
+  const SectionHeader = ({ icon, title, tone = 'cyber', action }: { icon: React.ReactNode; title: string; tone?: 'cyber' | 'matrix' | 'signal'; action?: React.ReactNode }) => (
+    <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--seam)]">
+      <span className={`text-sm font-semibold flex items-center gap-2 text-${tone}-400`} style={{ fontFamily: 'var(--font-display)' }}>
+        {icon}
+        {title}
+      </span>
+      {action}
+    </div>
+  )
 
   // ── Summary row for confirmation page ──
   const SummaryRow = ({ label, value, mono, highlight }: { label: string; value: React.ReactNode; mono?: boolean; highlight?: boolean }) => (
-    <div className="flex py-1.5" style={{ borderBottom: '1px solid rgba(100,100,100,0.15)' }}>
-      <span className="text-gray-500 text-sm w-32 flex-shrink-0">{label}</span>
-      <span className={`text-sm ${highlight ? 'text-matrix-400 font-medium' : 'text-gray-300'} ${mono ? 'font-mono' : ''}`}>
+    <div className="flex py-1.5 border-b border-[var(--seam)]">
+      <span className="text-sm w-36 flex-shrink-0" style={{ color: 'var(--ink-faint)' }}>{label}</span>
+      <span
+        className={`text-sm ${highlight ? 'text-matrix-400 font-medium' : ''} ${mono ? 'font-mono' : ''}`}
+        style={highlight ? undefined : { color: 'var(--ink)' }}
+      >
         {value || '—'}
       </span>
     </div>
@@ -819,65 +826,60 @@ export default function CreateTask() {
 
   // ── Project type display helpers ──
   const typeLabels: Record<string, { icon: React.ReactNode; text: string }> = {
-    backend_only: { icon: <CodeOutlined />, text: '後端' },
-    frontend_only: { icon: <GlobalOutlined />, text: '前端' },
-    fullstack: { icon: <AppstoreOutlined />, text: '全端' },
+    backend_only: { icon: <CodeOutlined />, text: 'Backend' },
+    frontend_only: { icon: <GlobalOutlined />, text: 'Frontend' },
+    fullstack: { icon: <AppstoreOutlined />, text: 'Full stack' },
   }
 
   return (
     <div className="max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-          {isRebuild ? '重新打包任務' : '建立新任務'}
-        </h1>
-        <p className="text-gray-400 mt-1">
-          {isRebuild ? `正在重新打包「${rebuildState?.projectName}」` : '設定並啟動新的打包任務'}
-        </p>
-        {!isRebuild && draftSavedAt && (
-          <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
-            <span>已自動保存草稿(離開後再回來會自動還原)</span>
-            <button
-              type="button"
-              onClick={clearDraft}
-              className="text-cyber-400 hover:text-cyber-300"
-            >
-              清除草稿
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Steps indicator + form mode toggle */}
-      <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex-1 min-w-[280px]">
-          <Steps current={currentStep} items={stepItems} size="small" />
+      {/* Page header — title + subtitle, form-mode toggle on the right, hairline seam under it */}
+      <div className="pb-5 mb-6 border-b border-[var(--seam)] flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+            {isRebuild ? 'Rebuild task' : 'New build'}
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+            {isRebuild ? `Rebuilding "${rebuildState?.projectName}"` : 'Configure and start a new build.'}
+          </p>
+          {!isRebuild && draftSavedAt && (
+            <div className="mt-2 flex items-center gap-3 text-xs" style={{ color: 'var(--ink-faint)' }}>
+              <span>Draft saved automatically. It restores when you come back.</span>
+              <button
+                type="button"
+                onClick={clearDraft}
+                className="text-cyber-400 hover:text-cyber-300"
+              >
+                Clear draft
+              </button>
+            </div>
+          )}
         </div>
-        <Tooltip title="簡易:只顯示核心欄位,進階選項預設收合。進階:一次展開全部設定。隨時可切換,也可手動點開個別區塊。">
+        <Tooltip title="Simple shows only the core fields and keeps advanced options collapsed. Advanced expands everything at once. You can switch anytime, or open individual sections by hand.">
           <Segmented
             value={simpleMode ? 'simple' : 'advanced'}
             onChange={(v) => setSimpleMode(v === 'simple')}
             options={[
-              { label: '簡易', value: 'simple' },
-              { label: '進階', value: 'advanced' },
+              { label: 'Simple', value: 'simple' },
+              { label: 'Advanced', value: 'advanced' },
             ]}
           />
         </Tooltip>
       </div>
 
+      {/* Steps indicator */}
+      <div className="mb-6">
+        <Steps current={currentStep} items={stepItems} size="small" />
+      </div>
+
       {/* Per-step hint banner — keeps user oriented at all times */}
-      <div
-        className="mb-4 p-3 rounded-lg flex items-start gap-3"
-        style={{
-          background: 'rgba(34, 211, 238, 0.05)',
-          border: '1px solid rgba(34, 211, 238, 0.25)',
-        }}
-      >
-        <SettingOutlined style={{ color: '#6ba6f7', fontSize: 16, marginTop: 2 }} />
+      <div className="mb-4 p-3 rounded-lg flex items-start gap-3 border border-cyber-500/30 bg-cyber-500/5">
+        <SettingOutlined style={{ color: 'var(--color-cyber-400)', fontSize: 16, marginTop: 2 }} />
         <div className="flex-1">
           <div className="text-cyber-300 text-sm font-medium">
-            步驟 {currentStep + 1} / {activeStepList.length}:{currentStepDef.title}
+            Step {currentStep + 1} of {activeStepList.length}: {currentStepDef.title}
           </div>
-          <div className="text-gray-400 text-xs mt-0.5" style={{ lineHeight: 1.6 }}>
+          <div className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)', lineHeight: 1.6 }}>
             {currentStepDef.description}
           </div>
         </div>
@@ -951,30 +953,31 @@ export default function CreateTask() {
               Step: Basic Info — project name, type, source
               ════════════════════════════════════════════ */}
           <div style={{ display: currentStepKey === 'basic' ? 'block' : 'none' }}>
-            <h3 className="text-lg font-medium text-white mb-4">你要打包什麼專案?</h3>
+            <div className="glass-card p-6 mb-4">
+            <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--ink)' }}>What do you want to build?</h3>
 
             <Form.Item
               name="project_name"
-              label={<span className="text-gray-300">專案名稱</span>}
-              rules={[{ required: true, message: '必填欄位' }]}
+              label={<span style={{ color: 'var(--ink-muted)' }}>Project name</span>}
+              rules={[{ required: true, message: 'Give the project a name' }]}
             >
-              <Input placeholder="我的專案" className="input-field" size="large" />
+              <Input placeholder="my-project" className="input-field" size="large" />
             </Form.Item>
 
             <Form.Item
               name="project_type"
-              label={<span className="text-gray-300">專案類型</span>}
+              label={<span style={{ color: 'var(--ink-muted)' }}>Project type</span>}
               rules={[{ required: true }]}
             >
               <Select size="large">
                 <Option value="backend_only">
-                  <CodeOutlined className="mr-2" />後端 (Python)
+                  <CodeOutlined className="mr-2" />Backend (Python)
                 </Option>
                 <Option value="frontend_only">
-                  <GlobalOutlined className="mr-2" />前端 (React / Vue 等)
+                  <GlobalOutlined className="mr-2" />Frontend (React, Vue, and so on)
                 </Option>
                 <Option value="fullstack">
-                  <AppstoreOutlined className="mr-2" />全端 (前後端整合)
+                  <AppstoreOutlined className="mr-2" />Full stack (frontend + backend)
                 </Option>
               </Select>
             </Form.Item>
@@ -983,13 +986,13 @@ export default function CreateTask() {
             <div ref={sourceModeRef}>
               <Form.Item
                 name="source_type"
-                label={<span className="text-gray-300">來源方式</span>}
-                tooltip="選擇「本機路徑」直接指定伺服器上已存在的專案目錄，或選「Git URL」由系統自動 clone 指定的 branch/tag"
+                label={<span style={{ color: 'var(--ink-muted)' }}>Source</span>}
+                tooltip="Choose Local path to point at a project directory that already exists on the server, or Git URL to have the server clone a branch or tag for you."
                 rules={[{ required: true }]}
               >
                 <Radio.Group size="large" buttonStyle="solid">
                   <Radio.Button value="local">
-                    <FolderOutlined /> 本機路徑
+                    <FolderOutlined /> Local path
                   </Radio.Button>
                   <Radio.Button value="git">
                     <LinkOutlined /> Git URL
@@ -1002,14 +1005,14 @@ export default function CreateTask() {
             {sourceType !== 'git' && (
               <Form.Item
                 name="project_path"
-                label={<span className="text-gray-300">專案路徑</span>}
-                tooltip="伺服器上的絕對路徑，需位於 /media/disk0/ 或 /media/disk1/ 之下"
+                label={<span style={{ color: 'var(--ink-muted)' }}>Project path</span>}
+                tooltip="Absolute path on the server. It must live under /media/disk0/ or /media/disk1/."
                 validateTrigger={['onBlur', 'onChange']}
                 rules={[
-                  { required: true, message: '請輸入專案路徑' },
+                  { required: true, message: 'Enter the project path' },
                   {
                     pattern: /^\/media\/disk[01]\//,
-                    message: '路徑必須以 /media/disk0/ 或 /media/disk1/ 開頭',
+                    message: 'The path must start with /media/disk0/ or /media/disk1/',
                   },
                 ]}
               >
@@ -1021,31 +1024,23 @@ export default function CreateTask() {
               </Form.Item>
             )}
 
+            </div>
+
             {/* ── Git URL mode ── */}
             {sourceType === 'git' && (
-              <Card
-                size="small"
-                title={
-                  <span className="text-cyber-400">
-                    <LinkOutlined className="mr-2" />
-                    Git 來源
-                  </span>
-                }
-                className="mb-4"
-                style={cardStyle}
-                styles={{ header: cardHeaderStyle }}
-              >
+              <div className="glass-card p-5 mb-4">
+                <SectionHeader icon={<LinkOutlined />} title="Git source" />
                 <div ref={gitUrlRef}>
                   <Form.Item
                     name="git_url"
-                    label={<span className="text-gray-300">Git URL</span>}
-                    tooltip="Token 由伺服器端從 .env 注入，請不要將帳號密碼寫在網址裡"
+                    label={<span style={{ color: 'var(--ink-muted)' }}>Git URL</span>}
+                    tooltip="The access token is injected server-side from .env — do not put credentials in the URL."
                     validateTrigger={['onBlur', 'onChange']}
                     rules={[
-                      { required: true, message: '請輸入 Git URL' },
+                      { required: true, message: 'Enter the Git URL' },
                       {
                         pattern: /^https?:\/\//,
-                        message: '僅支援 http 或 https 協定',
+                        message: 'Only http and https URLs are supported',
                       },
                     ]}
                   >
@@ -1062,7 +1057,7 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="git_ref_type"
-                      label={<span className="text-gray-300">類型</span>}
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Ref type</span>}
                     >
                       <Radio.Group
                         onChange={() => {
@@ -1071,10 +1066,10 @@ export default function CreateTask() {
                         }}
                       >
                         <Radio.Button value="branch">
-                          <BranchesOutlined /> 分支
+                          <BranchesOutlined /> Branch
                         </Radio.Button>
                         <Radio.Button value="tag">
-                          <TagOutlined /> 標籤
+                          <TagOutlined /> Tag
                         </Radio.Button>
                       </Radio.Group>
                     </Form.Item>
@@ -1084,16 +1079,16 @@ export default function CreateTask() {
                       <Form.Item
                         name="git_ref"
                         label={
-                          <span className="text-gray-300">
-                            {gitRefType === 'tag' ? '標籤' : '分支'}
+                          <span style={{ color: 'var(--ink-muted)' }}>
+                            {gitRefType === 'tag' ? 'Tag' : 'Branch'}
                           </span>
                         }
                         tooltip={
                           gitRefType === 'tag'
-                            ? '標籤代表固定的 commit。即使未來重新打包仍會抓到相同內容'
-                            : '分支會隨時更新。每次 rebuild 會抓取該 branch 當下的最新 commit'
+                            ? 'A tag points at a fixed commit, so a later rebuild pulls the exact same code.'
+                            : 'A branch keeps moving. Each rebuild pulls the latest commit on that branch.'
                         }
-                        rules={[{ required: true, message: '請選擇或輸入一個分支 / 標籤' }]}
+                        rules={[{ required: true, message: 'Pick or type a branch or tag' }]}
                       >
                         {/* AutoComplete = single-select combobox: pick from
                             the fetched list OR type a custom ref freely.
@@ -1105,10 +1100,10 @@ export default function CreateTask() {
                           allowClear
                           placeholder={
                             gitRefs.branches.length === 0 && gitRefs.tags.length === 0
-                              ? '輸入 Git URL 後會自動列出可用項目，也可手動輸入'
+                              ? 'Enter a Git URL to list available refs, or type one'
                               : gitRefType === 'tag'
-                              ? '選擇標籤（或手動輸入）'
-                              : '選擇分支（或手動輸入）'
+                              ? 'Pick a tag, or type one'
+                              : 'Pick a branch, or type one'
                           }
                           options={(gitRefType === 'tag' ? gitRefs.tags : gitRefs.branches).map(
                             (name) => ({ label: name, value: name }),
@@ -1127,43 +1122,43 @@ export default function CreateTask() {
                 {hasBackend && (
                   <div className="mb-3 text-xs" style={{ lineHeight: 1.6 }}>
                     {scanningTree ? (
-                      <span className="text-gray-400">
+                      <span style={{ color: 'var(--ink-muted)' }}>
                         <Spin size="small" />
-                        <span className="ml-2">正在偵測 Repo 目錄結構...</span>
+                        <span className="ml-2">Scanning the repo structure…</span>
                       </span>
                     ) : currentPath.startsWith('git:') && directories.length > 0 ? (
                       <span className="text-matrix-400">
                         <ScanOutlined className="mr-1" />
-                        已自動掃描到 {directories.length} 個目錄，請到下方「後端設定 → 進階設定」勾選
+                        Found {directories.length} directories. Pick the ones to bundle under Backend settings → Advanced below.
                       </span>
                     ) : currentPath.startsWith('git:') && directories.length === 0 ? (
-                      <span className="text-gray-400">
+                      <span style={{ color: 'var(--ink-muted)' }}>
                         <ScanOutlined className="mr-1" />
-                        Repo 根目錄內沒有可選的子目錄
+                        No selectable subdirectories in the repo root.
                       </span>
                     ) : (
-                      <span className="text-gray-500">
+                      <span style={{ color: 'var(--ink-faint)' }}>
                         <ScanOutlined className="mr-1" />
-                        選好分支 / 標籤後會自動偵測「要打包的 source code」與「資料目錄」的可選項目,並讀取 pyproject 依賴群組
+                        Once you pick a branch or tag, we scan for source and data directories to bundle, and read the pyproject dependency groups.
                       </span>
                     )}
                   </div>
                 )}
 
                 {/* Git mode hint */}
-                <div className="text-gray-500 text-xs" style={{ lineHeight: 1.6 }}>
+                <div className="text-xs" style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}>
                   <ScanOutlined className="mr-1" />
-                  伺服器會在任務啟動後 clone 至 <code className="text-gray-400">{workspaceDir}/&lt;task_id&gt;</code>
-                  ，完成後可於任務詳情頁查看「Repo 結構診斷」
+                  After the build starts, the server clones into <code style={{ color: 'var(--ink-muted)' }}>{workspaceDir}/&lt;task_id&gt;</code>.
+                  When it finishes, open the task detail page to see the repo-structure diagnostics.
                   {hasBackend && (
                     <>
                       <br />
                       <ScanOutlined className="mr-1" />
-                      偵測到 <code className="text-gray-400">pyproject.toml</code> / <code className="text-gray-400">uv.lock</code> / <code className="text-gray-400">requirements.txt</code> 時會自動執行 <code className="text-gray-400">uv sync --frozen</code> 建立 <code className="text-gray-400">.venv</code>
+                      When <code style={{ color: 'var(--ink-muted)' }}>pyproject.toml</code>, <code style={{ color: 'var(--ink-muted)' }}>uv.lock</code>, or <code style={{ color: 'var(--ink-muted)' }}>requirements.txt</code> is present, it runs <code style={{ color: 'var(--ink-muted)' }}>uv sync --frozen</code> to build the <code style={{ color: 'var(--ink-muted)' }}>.venv</code>.
                     </>
                   )}
                 </div>
-              </Card>
+              </div>
             )}
           </div>
           {/* ════ end Step: basic ════ */}
@@ -1173,38 +1168,26 @@ export default function CreateTask() {
               ════════════════════════════════════════════ */}
           <div style={{ display: currentStepKey === 'backend' ? 'block' : 'none' }}>
             {hasBackend && (
-              <Card
-                size="small"
-                title={<span className="text-cyber-400"><CodeOutlined className="mr-2" />後端設定</span>}
-                className="mb-4"
-                style={cardStyle}
-                styles={{ header: cardHeaderStyle }}
-              >
+              <div className="glass-card p-5 mb-4">
+                <SectionHeader icon={<CodeOutlined />} title="Backend settings" />
                 {/* Version mismatch is caught here rather than during the
                     build. The same ABI detection already ran in preflight, but
                     only after the user had filled in every step, queued, and
                     waited — one project submitted a version its own .so files
                     could not load 37 times that way. */}
                 {pythonMismatch && (
-                  <div
-                    className="glass-card p-4 mb-4"
-                    style={{
-                      borderLeft: '3px solid #f0bd5e',
-                      background: 'rgba(251, 191, 36, 0.06)',
-                    }}
-                  >
+                  <div className="p-4 mb-4 rounded-lg border-l-2 border-signal-400 bg-signal-500/8">
                     <div className="flex items-start gap-2">
-                      <WarningOutlined style={{ color: '#f0bd5e', marginTop: 3 }} />
+                      <WarningOutlined style={{ color: 'var(--color-signal-400)', marginTop: 3 }} />
                       <div className="flex-1">
-                        <div className="text-sm text-amber-200">
-                          這個專案的套件是用 <b>Python {pythonMismatch.detected}</b> 編譯的，
-                          但你選了 <b>Python {pythonMismatch.chosen}</b>。
+                        <div className="text-sm text-signal-400">
+                          This project's packages were compiled with <b>Python {pythonMismatch.detected}</b>,
+                          but you chose <b>Python {pythonMismatch.chosen}</b>.
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          照這樣打包，執行檔會在啟動時出現 ModuleNotFoundError —— 它載入不了專案自己的
-                          .so 檔。這是目前最常見的失敗原因。
+                        <div className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>
+                          Built this way, the binary raises ModuleNotFoundError on startup because it can't load the project's own .so files. This is the most common cause of failure.
                         </div>
-                        <div className="text-xs text-gray-600 mt-1 font-mono break-all">
+                        <div className="text-xs mt-1 font-mono break-all" style={{ color: 'var(--ink-faint)' }}>
                           {pythonMismatch.detail}
                         </div>
                         <Button
@@ -1212,28 +1195,21 @@ export default function CreateTask() {
                           className="mt-2"
                           onClick={() => form.setFieldValue('python_version', 'auto')}
                         >
-                          改用自動偵測
+                          Switch to auto-detect
                         </Button>
                       </div>
                     </div>
                   </div>
                 )}
                 {analysis?.detected_python?.inconsistent && (
-                  <div
-                    className="glass-card p-4 mb-4"
-                    style={{
-                      borderLeft: '3px solid #f27d7d',
-                      background: 'rgba(239, 68, 68, 0.06)',
-                    }}
-                  >
+                  <div className="p-4 mb-4 rounded-lg border-l-2 border-alert-400 bg-alert-500/8">
                     <div className="text-sm text-alert-400">
-                      這個專案的 .venv 內含多個不同 Python 版本的套件
+                      This project's .venv contains packages built for several different Python versions.
                     </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      無論選哪個版本都會有一部分套件載入失敗。請在專案目錄重建 .venv
-                      （刪掉 .venv 後重新 uv sync 或 pip install），再回來打包。
+                    <div className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>
+                      Whichever version you pick, some packages will fail to load. Rebuild the .venv in the project directory (delete .venv, then run uv sync or pip install again), then come back to build.
                     </div>
-                    <div className="text-xs text-gray-600 mt-1 font-mono break-all">
+                    <div className="text-xs mt-1 font-mono break-all" style={{ color: 'var(--ink-faint)' }}>
                       {analysis.detected_python.detail}
                     </div>
                   </div>
@@ -1243,13 +1219,13 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="python_version"
-                      label={<span className="text-gray-300">Python 版本</span>}
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Python version</span>}
                       rules={[{ required: true }]}
-                      tooltip="「自動偵測」會讀取專案 .venv 內已編譯套件(.so)的真實 Python 版本來決定編譯器版本 — 這是最可靠的方式,避免版本錯配。除非你很確定,否則建議用自動。"
-                      extra={<span className="text-xs text-gray-500">自動 = 依專案 .venv 的實際 .so 版本編譯(建議);手動指定會在版本不符時警告</span>}
+                      tooltip="Auto-detect reads the real Python version of the compiled packages (.so files) in the project's .venv and compiles to match — the most reliable way to avoid a version mismatch. Leave it on Auto unless you're sure."
+                      extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Auto compiles to match the .so files in the project's .venv (recommended). Choosing a version by hand warns you on a mismatch.</span>}
                     >
                       <Select>
-                        <Option value="auto">自動偵測(建議)</Option>
+                        <Option value="auto">Auto-detect (recommended)</Option>
                         {pythonVersions.map((v) => (
                           <Option key={v} value={v}>Python {v}</Option>
                         ))}
@@ -1259,8 +1235,8 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="entry_point"
-                      label={<span className="text-gray-300">進入點</span>}
-                      tooltip="要編譯的主 Python 檔案，相對於專案路徑"
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Entry point</span>}
+                      tooltip="The main Python file to compile, relative to the project path."
                       validateTrigger={['onBlur', 'onChange']}
                       rules={[{ required: true }]}
                     >
@@ -1270,8 +1246,8 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="output_name"
-                      label={<span className="text-gray-300">二進位執行檔</span>}
-                      tooltip="編譯後產生的二進位執行檔名稱。留空則從進入點自動推導"
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Binary name</span>}
+                      tooltip="Name of the compiled binary. Leave blank to derive it from the entry point."
                     >
                       <Input
                         placeholder={entryPoint ? entryPoint.replace(/\.py$/, '') : 'main'}
@@ -1285,23 +1261,23 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="pack_mode"
-                      label={<span className="text-gray-300">Nuitka 打包模式</span>}
-                      tooltip="External（建議）：第三方套件另外放在 libs/ 目錄,編譯較快；Full：所有依賴打包進單一執行檔,但 Nuitka 編譯時間非常長,8hr 起跳"
-                      extra={<span className="text-xs text-gray-500">不確定就用 External(快又穩)。Full 會全部包成一顆,但編譯極久</span>}
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Nuitka pack mode</span>}
+                      tooltip="External (recommended): third-party packages go in a separate libs/ directory and compile faster. Full: every dependency is packed into a single binary, but Nuitka takes a very long time — 8 hours or more."
+                      extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>When in doubt use External — fast and reliable. Full bundles everything into one binary but compiles for a very long time.</span>}
                     >
                       <Select>
-                        <Option value="external">External（建議,libs/）</Option>
-                        <Option value="full">Full（打包時間非常長,8hr 起跳）</Option>
+                        <Option value="external">External (recommended, libs/)</Option>
+                        <Option value="full">Full (very long build, 8h+)</Option>
                       </Select>
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="onefile"
-                      label={<span className="text-gray-300">單檔執行檔</span>}
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Single-file binary</span>}
                       valuePropName="checked"
                     >
-                      <Switch checkedChildren="是" unCheckedChildren="否" />
+                      <Switch checkedChildren="On" unCheckedChildren="Off" />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -1310,25 +1286,25 @@ export default function CreateTask() {
                 <Form.Item
                   name="dependency_group"
                   label={
-                    <span className="text-gray-300">
-                      依賴群組（uv <code className="text-cyber-400">--group</code>）
+                    <span style={{ color: 'var(--ink-muted)' }}>
+                      Dependency group (uv <code className="text-cyber-400">--group</code>)
                     </span>
                   }
                   tooltip={
                     <div>
-                      <div>選項自動讀取自 pyproject.toml 的 <code>[dependency-groups]</code> 段</div>
-                      <div className="mt-2">執行時會變成 <code>uv sync --group &lt;name&gt;</code></div>
-                      <div className="mt-2">典型用法:選不同平台的 PyTorch wheel(rocm / cuda / cpu)</div>
-                      <div className="mt-2 text-gray-400">只能單選;留空 = 不帶 --group flag(預設行為)</div>
+                      <div>Options are read from the <code>[dependency-groups]</code> section of pyproject.toml.</div>
+                      <div className="mt-2">At build time this becomes <code>uv sync --group &lt;name&gt;</code>.</div>
+                      <div className="mt-2">Typical use: pick the right PyTorch wheel per platform (rocm / cuda / cpu).</div>
+                      <div className="mt-2" style={{ color: 'var(--ink-muted)' }}>Single-select. Leave blank to omit the --group flag (the default).</div>
                     </div>
                   }
                   extra={
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
                       {depGroups.length > 0
-                        ? `已從 pyproject.toml 讀取到 ${depGroups.length} 個群組,只能擇一`
+                        ? `Read ${depGroups.length} groups from pyproject.toml. Pick one.`
                         : sourceType === 'git'
-                        ? '選好分支 / 標籤後會自動讀取此 repo 的 pyproject.toml 群組'
-                        : '輸入專案路徑後會自動讀取 pyproject.toml 內定義的群組'}
+                        ? 'Pick a branch or tag to read this repo’s pyproject.toml groups.'
+                        : 'Enter the project path to read the groups defined in pyproject.toml.'}
                     </span>
                   }
                 >
@@ -1336,8 +1312,8 @@ export default function CreateTask() {
                     allowClear
                     placeholder={
                       depGroups.length > 0
-                        ? '選擇一個依賴群組'
-                        : '此專案的 pyproject.toml 沒有定義 [dependency-groups]'
+                        ? 'Pick a dependency group'
+                        : 'No [dependency-groups] defined in this project’s pyproject.toml'
                     }
                     style={{ width: '100%' }}
                     loading={loadingDepGroups}
@@ -1356,8 +1332,8 @@ export default function CreateTask() {
                     key: 'backend-advanced',
                     forceRender: true,
                     label: (
-                      <span className="text-gray-300 text-sm">
-                        <SettingOutlined className="mr-2" />進階設定:CPU 並行、強制納入套件、額外目錄
+                      <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                        <SettingOutlined className="mr-2" />Advanced: CPU parallelism, forced packages, extra directories
                       </span>
                     ),
                     children: (
@@ -1366,18 +1342,18 @@ export default function CreateTask() {
                           <Col xs={24} md={8}>
                             <Form.Item
                               name="nuitka_jobs"
-                              label={<span className="text-gray-300">CPU 並行數</span>}
-                              tooltip="C 編譯的並行 job 數。越多越快，但記憶體用量也會增加"
+                              label={<span style={{ color: 'var(--ink-muted)' }}>CPU parallelism</span>}
+                              tooltip="Number of parallel C-compile jobs. More is faster, but uses more memory."
                             >
                               <Select>
-                                <Option value={0}>自動</Option>
+                                <Option value={0}>Auto</Option>
                                 {cpuCount > 0 && (
-                                  <Option value={cpuCount}>全部核心 ({cpuCount})</Option>
+                                  <Option value={cpuCount}>All cores ({cpuCount})</Option>
                                 )}
                                 {[1, 2, 4, 8, 16, 32, 64, 128]
                                   .filter((n) => n < cpuCount)
                                   .map((n) => (
-                                    <Option key={n} value={n}>{n} 核</Option>
+                                    <Option key={n} value={n}>{n} cores</Option>
                                   ))}
                               </Select>
                             </Form.Item>
@@ -1385,10 +1361,10 @@ export default function CreateTask() {
                           <Col xs={24} md={16}>
                             <Form.Item
                               name="include_packages"
-                              label={<span className="text-gray-300">強制納入套件</span>}
-                              tooltip="以逗號分隔；用於 Nuitka 偵測不到的動態 / 延遲載入套件"
+                              label={<span style={{ color: 'var(--ink-muted)' }}>Force-include packages</span>}
+                              tooltip="Comma-separated. For packages Nuitka can't detect because they load dynamically or lazily."
                             >
-                              <Input placeholder="例如：litellm, openai" className="input-field" />
+                              <Input placeholder="e.g. litellm, openai" className="input-field" />
                             </Form.Item>
                           </Col>
                         </Row>
@@ -1397,74 +1373,74 @@ export default function CreateTask() {
                           <Col xs={24} md={12}>
                             <Form.Item
                               name="output_dir"
-                              label={<span className="text-gray-300">輸出目錄</span>}
-                              tooltip="留空則使用預設 'dist'"
+                              label={<span style={{ color: 'var(--ink-muted)' }}>Output directory</span>}
+                              tooltip="Leave blank to use the default, 'dist'."
                             >
-                              <Input placeholder="dist（預設）" className="input-field" />
+                              <Input placeholder="dist (default)" className="input-field" />
                             </Form.Item>
                           </Col>
                         </Row>
 
-                        <Divider style={dividerStyle} />
+                        <div className="border-t border-[var(--seam)] my-3" />
 
                         {/* ── Nuitka compile optimization & diagnostics ── */}
-                        <div className="mb-1 text-gray-300 text-sm">
-                          <SettingOutlined className="mr-2" />編譯最佳化與診斷
+                        <div className="mb-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                          <SettingOutlined className="mr-2" />Compile optimization and diagnostics
                         </div>
-                        <div className="text-xs text-gray-500 mb-3" style={{ lineHeight: 1.6 }}>
-                          這三個都可以不用動,維持預設即可。想縮小體積、或遇到「打包後執行時找不到檔案」時再來調。
+                        <div className="text-xs mb-3" style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}>
+                          You can leave all three at their defaults. Reach for them to shrink the binary, or when the built binary can't find a file at runtime.
                         </div>
                         <Row gutter={16}>
                           <Col xs={24} md={8}>
                             <Form.Item
                               name="enable_anti_bloat"
-                              label={<span className="text-gray-300">縮小體積</span>}
+                              label={<span style={{ color: 'var(--ink-muted)' }}>Shrink binary</span>}
                               valuePropName="checked"
-                              tooltip="開啟 Nuitka 的 anti-bloat 外掛,自動移除套件夾帶的測試碼 / 文件 / 開發用 import。主要對 Full 模式有感,External 模式影響很小。"
-                              extra={<span className="text-xs text-gray-500">移除沒用到的測試 / 文件,讓檔案更小(預設開)</span>}
+                              tooltip="Enables Nuitka's anti-bloat plugin, which strips test code, docs, and dev-only imports bundled inside packages. Noticeable in Full mode; barely matters in External mode."
+                              extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Removes unused tests and docs to make the binary smaller (on by default).</span>}
                             >
-                              <Switch checkedChildren="開" unCheckedChildren="關" />
+                              <Switch checkedChildren="On" unCheckedChildren="Off" />
                             </Form.Item>
                           </Col>
                           <Col xs={24} md={8}>
                             <Form.Item
                               name="generate_report"
-                              label={<span className="text-gray-300">產生編譯報告</span>}
+                              label={<span style={{ color: 'var(--ink-muted)' }}>Compilation report</span>}
                               valuePropName="checked"
-                              tooltip="輸出 compilation-report.xml(放在輸出目錄,會一起包進下載檔)。列出每個模組有沒有被包進去,debug「執行時少東西」很有用。"
-                              extra={<span className="text-xs text-gray-500">遇到缺套件時,用它查誰被漏掉</span>}
+                              tooltip="Writes compilation-report.xml to the output directory (included in the download). It lists whether each module was bundled — useful for debugging things missing at runtime."
+                              extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Use it to find what got left out when a package is missing.</span>}
                             >
-                              <Switch checkedChildren="開" unCheckedChildren="關" />
+                              <Switch checkedChildren="On" unCheckedChildren="Off" />
                             </Form.Item>
                           </Col>
                           <Col xs={24} md={8}>
                             <Form.Item
                               name="verify_after_build"
-                              label={<span className="text-gray-300">打包後驗證</span>}
+                              label={<span style={{ color: 'var(--ink-muted)' }}>Verify after build</span>}
                               valuePropName="checked"
-                              tooltip="編譯完成後自動啟動一次 binary,確認不會一開機就因為缺套件掛掉。偵測到 ModuleNotFoundError 會把任務標記為失敗並貼出缺的模組。"
-                              extra={<span className="text-xs text-gray-500">編完跑跑看,確認真的能啟動(預設開,強烈建議)</span>}
+                              tooltip="Launches the binary once after compiling to confirm it doesn't crash on startup for a missing package. A ModuleNotFoundError marks the task as failed and reports the missing module."
+                              extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Runs the binary once to confirm it starts (on by default, strongly recommended).</span>}
                             >
-                              <Switch checkedChildren="開" unCheckedChildren="關" />
+                              <Switch checkedChildren="On" unCheckedChildren="Off" />
                             </Form.Item>
                           </Col>
                         </Row>
                         <Form.Item
                           name="include_package_data"
-                          label={<span className="text-gray-300">強制納入套件「資料檔」</span>}
-                          tooltip="以逗號分隔的套件名稱。把套件內的非 .py 資料檔(json / 憑證 / 模板)一起打包。常見的(certifi、litellm 等)系統會自動偵測,這裡只填額外的。"
-                          extra={<span className="text-xs text-gray-500">執行時噴 FileNotFoundError、且缺的是某套件內建資料檔時才需要</span>}
+                          label={<span style={{ color: 'var(--ink-muted)' }}>Force-include package data files</span>}
+                          tooltip="Comma-separated package names. Bundles the non-.py data files inside a package (JSON, certificates, templates). Common ones (certifi, litellm, and so on) are detected automatically — list only the extras here."
+                          extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Only needed when a runtime FileNotFoundError is missing a data file that ships inside a package.</span>}
                         >
-                          <Input placeholder="例如:certifi, litellm" className="input-field" />
+                          <Input placeholder="e.g. certifi, litellm" className="input-field" />
                         </Form.Item>
 
-                        <Divider style={dividerStyle} />
+                        <div className="border-t border-[var(--seam)] my-3" />
 
                         {/* Extra Source Directories */}
                         <div className="mt-2">
                           <div className="flex items-center justify-between mb-3">
-                            <label className="text-gray-300 text-sm">
-                              <FolderOutlined className="mr-2" />要一起打包的 source code(Python 程式碼)
+                            <label className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                              <FolderOutlined className="mr-2" />Source code to bundle (Python)
                             </label>
                             {directories.length > 0 && (
                               <div className="flex items-center gap-2">
@@ -1473,33 +1449,34 @@ export default function CreateTask() {
                                   onClick={handleSelectAll}
                                   className="text-xs text-cyber-400 hover:text-cyber-300"
                                 >
-                                  {selectedDirs.length === directories.length ? '取消全選' : '全選'}
+                                  {selectedDirs.length === directories.length ? 'Clear all' : 'Select all'}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => fetchDirectories(projectPath || '')}
-                                  className="text-gray-400 hover:text-cyber-400 p-1"
-                                  title="重新整理"
+                                  className="p-1"
+                                  style={{ color: 'var(--ink-muted)' }}
+                                  title="Refresh"
                                 >
                                   <ReloadOutlined />
                                 </button>
                               </div>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500 mb-2" style={{ lineHeight: 1.6 }}>
-                            這裡選的目錄會被當成 Python 原始碼一起編進執行檔(import 得到)。主程式以外的套件 / 模組目錄選這裡。
+                          <div className="text-xs mb-2" style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}>
+                            These directories are compiled into the binary as Python source (importable). Pick the package and module directories other than your entry point.
                           </div>
-                          <div className="rounded-lg border border-gray-700 bg-void-800/50 p-4 min-h-[60px]">
+                          <div className="rounded-lg border border-[var(--seam)] bg-void-950 p-4 min-h-[60px]">
                             {loadingDirs ? (
                               <div className="flex items-center justify-center py-2">
                                 <Spin size="small" />
-                                <span className="ml-2 text-gray-400 text-sm">載入中...</span>
+                                <span className="ml-2 text-sm" style={{ color: 'var(--ink-muted)' }}>Loading…</span>
                               </div>
                             ) : dirError ? (
                               <div className="text-alert-400 text-sm py-2">{dirError}</div>
                             ) : directories.length === 0 ? (
-                              <div className="text-gray-500 text-sm py-2">
-                                {projectPath ? '找不到任何目錄' : '請先輸入專案路徑'}
+                              <div className="text-sm py-2" style={{ color: 'var(--ink-faint)' }}>
+                                {projectPath ? 'No directories found' : 'Enter the project path first'}
                               </div>
                             ) : (
                               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -1508,7 +1485,6 @@ export default function CreateTask() {
                                     key={dir}
                                     checked={selectedDirs.includes(dir)}
                                     onChange={(e) => handleDirToggle(dir, e.target.checked)}
-                                    className="text-gray-300"
                                   >
                                     <span className="text-sm">{dir}</span>
                                     {renderDirTags(dir)}
@@ -1518,8 +1494,8 @@ export default function CreateTask() {
                             )}
                           </div>
                           {selectedDirs.length > 0 && (
-                            <div className="mt-2 text-xs text-gray-400">
-                              已選擇：{selectedDirs.join(', ')}
+                            <div className="mt-2 text-xs" style={{ color: 'var(--ink-muted)' }}>
+                              Selected: {selectedDirs.join(', ')}
                             </div>
                           )}
                         </div>
@@ -1527,20 +1503,20 @@ export default function CreateTask() {
                         {/* Data Directories */}
                         <div className="mt-4">
                           <div className="flex items-center justify-between mb-3">
-                            <label className="text-gray-300 text-sm">
-                              <FolderOutlined className="mr-2" />資料目錄(會原樣複製到執行檔旁邊的資料夾)
+                            <label className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                              <FolderOutlined className="mr-2" />Data directories (copied as-is next to the binary)
                             </label>
                           </div>
-                          <div className="text-xs text-gray-500 mb-2" style={{ lineHeight: 1.6 }}>
-                            這裡選的目錄不會編進執行檔,而是打包後原封不動複製到執行檔旁邊。適合靜態檔、樣板、設定檔等。
+                          <div className="text-xs mb-2" style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}>
+                            These directories aren't compiled in — they're copied unchanged next to the binary after the build. Good for static files, templates, and config.
                           </div>
-                          <div className="rounded-lg border border-gray-700 bg-void-800/50 p-4 min-h-[60px]">
+                          <div className="rounded-lg border border-[var(--seam)] bg-void-950 p-4 min-h-[60px]">
                             {loadingDirs ? (
                               <div className="flex items-center justify-center py-2">
                                 <Spin size="small" />
                               </div>
                             ) : directories.length === 0 ? (
-                              <div className="text-gray-500 text-sm py-2">請先輸入專案路徑</div>
+                              <div className="text-sm py-2" style={{ color: 'var(--ink-faint)' }}>Enter the project path first</div>
                             ) : (
                               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                                 {directories.map((dir) => (
@@ -1554,7 +1530,6 @@ export default function CreateTask() {
                                         setSelectedDataDirs((prev) => prev.filter((d) => d !== dir))
                                       }
                                     }}
-                                    className="text-gray-300"
                                   >
                                     <span className="text-sm">{dir}</span>
                                     {renderDirTags(dir)}
@@ -1564,8 +1539,8 @@ export default function CreateTask() {
                             )}
                           </div>
                           {selectedDataDirs.length > 0 && (
-                            <div className="mt-2 text-xs text-gray-400">
-                              已選擇：{selectedDataDirs.join(', ')}
+                            <div className="mt-2 text-xs" style={{ color: 'var(--ink-muted)' }}>
+                              Selected: {selectedDataDirs.join(', ')}
                             </div>
                           )}
                         </div>
@@ -1573,7 +1548,7 @@ export default function CreateTask() {
                     ),
                   }]}
                 />
-              </Card>
+              </div>
             )}
           </div>
           {/* ════ end Step: backend ════ */}
@@ -1583,11 +1558,12 @@ export default function CreateTask() {
               ════════════════════════════════════════════ */}
           <div style={{ display: currentStepKey === 'frontend' ? 'block' : 'none' }}>
             {showFrontendSettings && (
-              <Card
-                size="small"
-                title={
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-matrix-400"><GlobalOutlined className="mr-2" />前端設定</span>
+              <div className="glass-card p-5 mb-4">
+                <SectionHeader
+                  icon={<GlobalOutlined />}
+                  title="Frontend settings"
+                  tone="matrix"
+                  action={
                     <Button
                       size="small"
                       icon={<ScanOutlined />}
@@ -1597,28 +1573,24 @@ export default function CreateTask() {
                         else { void detectFrontendConfig(false) }
                       }}
                     >
-                      自動偵測
+                      Auto-detect
                     </Button>
-                  </div>
-                }
-                className="mb-4"
-                style={cardStyle}
-                styles={{ header: cardHeaderStyle }}
-              >
+                  }
+                />
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="frontend_dir"
-                      label={<span className="text-gray-300">前端目錄</span>}
-                      tooltip="「.」代表專案根目錄；若前端在子目錄則填「frontend」等"
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Frontend directory</span>}
+                      tooltip="Use '.' for the project root. If the frontend lives in a subdirectory, enter its name, e.g. 'frontend'."
                     >
-                      <Input placeholder=". (根目錄)" className="input-field" />
+                      <Input placeholder=". (project root)" className="input-field" />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="frontend_build_tool"
-                      label={<span className="text-gray-300">建置工具</span>}
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Build tool</span>}
                     >
                       <Select>
                         <Option value="npm">npm</Option>
@@ -1631,8 +1603,8 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="frontend_build_command"
-                      label={<span className="text-gray-300">建置指令</span>}
-                      tooltip="例如：build、build:prod"
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Build command</span>}
+                      tooltip="e.g. build, build:prod"
                     >
                       <Input placeholder="build" className="input-field" />
                     </Form.Item>
@@ -1642,17 +1614,17 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="frontend_output_dir"
-                      label={<span className="text-gray-300">輸出目錄</span>}
-                      tooltip="前端建置產出目錄，例如 dist"
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Output directory</span>}
+                      tooltip="Where the frontend build lands, e.g. dist."
                     >
                       <Input placeholder="dist" className="input-field" />
                     </Form.Item>
                   </Col>
                 </Row>
 
-                <Divider style={dividerStyle} />
+                <div className="border-t border-[var(--seam)] my-4" />
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-300 text-sm">前端建置環境變數 (.env)</span>
+                  <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Frontend build env (.env)</span>
                   <div className="flex gap-2">
                     <Button
                       size="small"
@@ -1663,7 +1635,7 @@ export default function CreateTask() {
                         else { void fetchEnvFiles() }
                       }}
                     >
-                      掃描
+                      Scan
                     </Button>
                     <Button
                       size="small"
@@ -1671,7 +1643,7 @@ export default function CreateTask() {
                       loading={loadingEnv}
                       onClick={handleLoadEnv}
                     >
-                      {sourceType === 'git' ? '從 Git 載入' : '從專案載入'}
+                      {sourceType === 'git' ? 'Load from Git' : 'Load from project'}
                     </Button>
                   </div>
                 </div>
@@ -1679,10 +1651,10 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="frontend_env_filename"
-                      label={<span className="text-gray-300">Env 檔名</span>}
-                      tooltip="例如 .env.production（建置時會優先於 .env）"
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Env filename</span>}
+                      tooltip="e.g. .env.production (takes priority over .env at build time)."
                       validateTrigger={['onBlur', 'onChange']}
-                      rules={[{ pattern: /^\.env(\.\w+)*$/, message: '必須是 .env 或 .env.*' }]}
+                      rules={[{ pattern: /^\.env(\.\w+)*$/, message: 'Must be .env or .env.*' }]}
                     >
                       <AutoComplete
                         placeholder=".env"
@@ -1697,17 +1669,17 @@ export default function CreateTask() {
                 </Row>
                 <Form.Item
                   name="frontend_env_content"
-                  label={<span className="text-gray-300">Env 內容</span>}
-                  tooltip="建置前會寫入前端目錄。每行一組 KEY=VALUE。"
+                  label={<span style={{ color: 'var(--ink-muted)' }}>Env content</span>}
+                  tooltip="Written into the frontend directory before the build. One KEY=VALUE per line."
                 >
                   <Input.TextArea
                     rows={4}
                     placeholder={"VITE_API_BASE_URL=https://api.example.com\nVITE_APP_TITLE=My App"}
                     className="input-field"
-                    style={{ fontFamily: 'monospace' }}
+                    style={{ fontFamily: 'var(--font-mono)' }}
                   />
                 </Form.Item>
-              </Card>
+              </div>
             )}
           </div>
           {/* ════ end Step: frontend ════ */}
@@ -1716,30 +1688,27 @@ export default function CreateTask() {
               Step: Docker — output decision + image settings
               ════════════════════════════════════════════ */}
           <div style={{ display: currentStepKey === 'docker' ? 'block' : 'none' }}>
-            <h3 className="text-lg font-medium text-white mb-2">要打包成 Docker image 嗎?</h3>
-            <p className="text-gray-400 text-sm mb-6">
+            <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--ink)' }}>Build a Docker image?</h3>
+            <p className="text-sm mb-6" style={{ color: 'var(--ink-muted)' }}>
               {hasBackend
-                ? '後端會先用 Nuitka 在主機上編譯，再打包進精簡的 Docker image。'
-                : '前端會建置後放進 Docker container，以 Nginx 提供服務。'}
+                ? 'The backend is compiled with Nuitka on the host first, then packed into a slim Docker image.'
+                : 'The frontend is built, placed in a Docker container, and served by Nginx.'}
             </p>
 
-            <div
-              className="flex items-center gap-6 p-6 rounded-xl"
-              style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(100,100,100,0.3)' }}
-            >
-              <CloudServerOutlined style={{ fontSize: 32, color: dockerEnabled ? '#a855f7' : '#6b7280' }} />
+            <div className="glass-card flex items-center gap-6 p-6">
+              <CloudServerOutlined style={{ fontSize: 32, color: dockerEnabled ? 'var(--color-cyber-400)' : 'var(--ink-faint)' }} />
               <div className="flex-1">
-                <div className="text-white font-medium">Docker Image 輸出</div>
-                <div className="text-gray-400 text-sm mt-1">
+                <div className="font-medium" style={{ color: 'var(--ink)' }}>Docker image output</div>
+                <div className="text-sm mt-1" style={{ color: 'var(--ink-muted)' }}>
                   {dockerEnabled
-                    ? '打包結果會輸出為 Docker image（.tar.gz）'
-                    : '只會輸出本機檔案，不會包成 Docker image'}
+                    ? 'The build is exported as a Docker image (.tar.gz).'
+                    : 'Only local files are produced — no Docker image.'}
                 </div>
               </div>
               <Form.Item name="docker_enabled" valuePropName="checked" style={{ marginBottom: 0 }}>
                 <Switch
-                  checkedChildren="是"
-                  unCheckedChildren="否"
+                  checkedChildren="On"
+                  unCheckedChildren="Off"
                   style={{ transform: 'scale(1.3)' }}
                 />
               </Form.Item>
@@ -1747,19 +1716,14 @@ export default function CreateTask() {
 
             {/* Docker Settings — shown when enabled */}
             {dockerEnabled && (
-              <Card
-                size="small"
-                title={<span className="text-purple-400"><CloudServerOutlined className="mr-2" />Docker 設定</span>}
-                className="mt-6"
-                style={cardStyle}
-                styles={{ header: cardHeaderStyle }}
-              >
+              <div className="glass-card p-5 mt-6">
+                <SectionHeader icon={<CloudServerOutlined />} title="Docker settings" />
                 <Row gutter={16}>
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="docker_image_name"
-                      label={<span className="text-gray-300">Image 名稱</span>}
-                      tooltip="例如：myapp:latest"
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Image name</span>}
+                      tooltip="e.g. myapp:latest"
                     >
                       <Input placeholder="myapp:latest" className="input-field" />
                     </Form.Item>
@@ -1767,7 +1731,7 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="docker_base_image"
-                      label={<span className="text-gray-300">基底 Image</span>}
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Base image</span>}
                     >
                       <Input placeholder="python:3.13-slim" className="input-field" />
                     </Form.Item>
@@ -1775,7 +1739,7 @@ export default function CreateTask() {
                   <Col xs={24} md={8}>
                     <Form.Item
                       name="docker_expose_port"
-                      label={<span className="text-gray-300">對外連接埠</span>}
+                      label={<span style={{ color: 'var(--ink-muted)' }}>Exposed port</span>}
                     >
                       <InputNumber min={1} max={65535} style={{ width: '100%' }} placeholder="8000" />
                     </Form.Item>
@@ -1788,19 +1752,19 @@ export default function CreateTask() {
                       <Col xs={24} md={16}>
                         <Form.Item
                           name="docker_api_proxy"
-                          label={<span className="text-gray-300">API Proxy 網址</span>}
-                          tooltip="Nginx 會把 /api 反向代理至這個網址"
+                          label={<span style={{ color: 'var(--ink-muted)' }}>API proxy URL</span>}
+                          tooltip="Nginx reverse-proxies /api to this URL."
                         >
                           <Input placeholder="http://192.168.1.10:5011" className="input-field" />
                         </Form.Item>
                       </Col>
                     </Row>
 
-                    <div className="mb-1 text-gray-300 text-sm">
-                      <SettingOutlined className="mr-2" />nginx 設定
+                    <div className="mb-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                      <SettingOutlined className="mr-2" />Nginx settings
                     </div>
-                    <div className="text-xs text-gray-500 mb-3" style={{ lineHeight: 1.6 }}>
-                      純前端的 Docker 是用 nginx 提供服務,以下是常被調整的幾個旋鈕,維持預設即可。
+                    <div className="text-xs mb-3" style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}>
+                      A frontend-only Docker image is served by Nginx. These are the knobs people tweak most often — the defaults are fine.
                     </div>
 
                     {/* The timeout is the setting people get wrong, and the
@@ -1816,46 +1780,45 @@ export default function CreateTask() {
                           key: 'timeout-help',
                           label: (
                             <span className="text-xs text-cyber-300">
-                              我需要調整逾時嗎?(點開看判斷方式)
+                              Do I need to adjust the timeout? (open for how to decide)
                             </span>
                           ),
                           children: (
-                            <div className="text-xs text-gray-400" style={{ lineHeight: 1.8 }}>
+                            <div className="text-xs" style={{ color: 'var(--ink-muted)', lineHeight: 1.8 }}>
                               <div className="mb-2">
-                                逾時算的是「<b className="text-gray-300">後端最長一段沉默有多久</b>」,
-                                不是請求總共跑多久。每收到一點資料就會重新計時。
+                                The timeout measures <b style={{ color: 'var(--ink)' }}>the longest single silence from the backend</b>,
+                                not how long the request runs in total. Every byte received resets the clock.
                               </div>
                               <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                                 <tbody>
                                   {[
-                                    ['SSE / 逐字串流的 LLM', '不用調 — 每個 token 都會重置計時器'],
-                                    ['語音辨識、一次性回傳的 LLM', '只有當最壞情況可能超過預設值才要調大'],
-                                    ['WebSocket 有心跳', '不用調 — 心跳會重置計時器'],
-                                    ['WebSocket 沒有心跳', '要調 — 必須大於最長的靜默期'],
-                                    ['大檔上傳', '不用調 — 串流模式已讓資料持續流動'],
+                                    ['SSE / token-streaming LLM', 'No change — every token resets the timer'],
+                                    ['Speech-to-text, one-shot LLM', 'Raise it only if the worst case could exceed the default'],
+                                    ['WebSocket with heartbeat', 'No change — the heartbeat resets the timer'],
+                                    ['WebSocket without heartbeat', 'Raise it — must exceed the longest quiet period'],
+                                    ['Large file upload', 'No change — streaming mode keeps data flowing'],
                                   ].map(([k, v]) => (
                                     <tr key={k}>
                                       <td
-                                        className="text-gray-300 pr-3 align-top"
-                                        style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '4px 8px 4px 0', whiteSpace: 'nowrap' }}
+                                        className="pr-3 align-top"
+                                        style={{ color: 'var(--ink)', borderTop: '1px solid var(--seam)', padding: '4px 8px 4px 0', whiteSpace: 'nowrap' }}
                                       >
                                         {k}
                                       </td>
-                                      <td style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '4px 0' }}>
+                                      <td style={{ borderTop: '1px solid var(--seam)', padding: '4px 0' }}>
                                         {v}
                                       </td>
                                     </tr>
                                   ))}
                                 </tbody>
                               </table>
-                              <div className="mt-2 text-amber-300">
-                                ⚠ 如果容器外面還有一層公司的 nginx,那一層有它自己的逾時設定。
-                                只改這裡是沒有用的 —— 鏈上任何一層都會生效,以最小的為準。
-                                若重建後仍在約 60 秒斷掉,就是外層那道。
+                              <div className="mt-2 text-signal-400">
+                                ⚠ If there's another company Nginx in front of the container, that layer has its own timeout.
+                                Changing only this one does nothing — every layer in the chain applies, and the smallest wins.
+                                If it still drops at around 60 seconds after a rebuild, it's the outer layer.
                               </div>
-                              <div className="mt-1 text-gray-500">
-                                最穩的做法是讓後端在等待期間定期送出資料(SSE 每 10 秒送一行
-                                「: keepalive」),這樣每一層代理都會同時被滿足。
+                              <div className="mt-1" style={{ color: 'var(--ink-faint)' }}>
+                                The most reliable fix is to have the backend send data periodically while it works (SSE: a ": keepalive" line every 10 seconds), which satisfies every proxy layer at once.
                               </div>
                             </div>
                           ),
@@ -1866,29 +1829,28 @@ export default function CreateTask() {
                       <Col xs={24} md={8}>
                         <Form.Item
                           name="nginx_client_max_body_size"
-                          label={<span className="text-gray-300">上傳大小上限</span>}
-                          tooltip="nginx client_max_body_size。0 = 不限制。例:50m、1g、0"
-                          extra={<span className="text-xs text-gray-500">上傳檔案出現 413 時調這個。0 = 不限</span>}
+                          label={<span style={{ color: 'var(--ink-muted)' }}>Max upload size</span>}
+                          tooltip="nginx client_max_body_size. 0 = unlimited. e.g. 50m, 1g, 0"
+                          extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Raise this when uploads hit a 413. 0 = unlimited.</span>}
                           validateTrigger={['onBlur', 'onChange']}
-                          rules={[{ pattern: /^\d+[kKmMgG]?$/, message: '格式例:50m / 1g / 0' }]}
+                          rules={[{ pattern: /^\d+[kKmMgG]?$/, message: 'e.g. 50m / 1g / 0' }]}
                         >
-                          <Input placeholder="0(不限)" className="input-field" />
+                          <Input placeholder="0 (unlimited)" className="input-field" />
                         </Form.Item>
                       </Col>
                       <Col xs={24} md={8}>
                         <Form.Item
                           name="nginx_proxy_read_timeout"
-                          label={<span className="text-gray-300">後端最久可以「不出聲」多久</span>}
-                          tooltip="nginx proxy_read_timeout / proxy_send_timeout。這是閒置逾時,不是請求總長度上限"
+                          label={<span style={{ color: 'var(--ink-muted)' }}>Max backend silence</span>}
+                          tooltip="nginx proxy_read_timeout / proxy_send_timeout. This is an idle timeout, not a cap on total request length."
                           extra={
-                            <span className="text-xs text-gray-500">
-                              這是「後端多久沒回傳任何資料」就放棄,不是請求總時間上限。
-                              語音辨識、一次性回傳的 LLM 這類「算很久才吐結果」的 API 要調大,
-                              否則會收到 504。
+                            <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                              How long the backend can send nothing before Nginx gives up — not a cap on total request time.
+                              Raise it for slow-to-respond APIs like speech-to-text or one-shot LLMs, or you'll get a 504.
                             </span>
                           }
                           validateTrigger={['onBlur', 'onChange']}
-                          rules={[{ pattern: /^\d+[smhdSMHD]?$/, message: '格式例:300s / 10m' }]}
+                          rules={[{ pattern: /^\d+[smhdSMHD]?$/, message: 'e.g. 300s / 10m' }]}
                         >
                           <Input placeholder="300s" className="input-field" />
                         </Form.Item>
@@ -1896,17 +1858,17 @@ export default function CreateTask() {
                       <Col xs={24} md={8}>
                         <Form.Item
                           name="nginx_streaming"
-                          label={<span className="text-gray-300">串流模式</span>}
+                          label={<span style={{ color: 'var(--ink-muted)' }}>Streaming mode</span>}
                           valuePropName="checked"
-                          tooltip="關閉 nginx 的請求/回應緩衝(proxy_buffering off)"
+                          tooltip="Turns off Nginx request/response buffering (proxy_buffering off)."
                           extra={
-                            <span className="text-xs text-gray-500">
-                              LLM 逐字輸出(SSE)、長音檔上傳請保持開啟。
-                              關閉的話 nginx 會等後端整包回完才送出,串流效果會消失。
+                            <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                              Keep this on for token-streamed LLM output (SSE) and long audio uploads.
+                              Off, Nginx buffers the whole response before sending, and streaming stops working.
                             </span>
                           }
                         >
-                          <Switch checkedChildren="開" unCheckedChildren="關" />
+                          <Switch checkedChildren="On" unCheckedChildren="Off" />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -1914,12 +1876,12 @@ export default function CreateTask() {
                       <Col xs={24} md={8}>
                         <Form.Item
                           name="nginx_gzip"
-                          label={<span className="text-gray-300">gzip 壓縮</span>}
+                          label={<span style={{ color: 'var(--ink-muted)' }}>gzip compression</span>}
                           valuePropName="checked"
-                          tooltip="對 CSS/JS/JSON/SVG 開啟 gzip,減少傳輸量"
-                          extra={<span className="text-xs text-gray-500">靜態資源壓縮(建議開)</span>}
+                          tooltip="Enables gzip for CSS/JS/JSON/SVG to cut transfer size."
+                          extra={<span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Compresses static assets (recommended on).</span>}
                         >
-                          <Switch checkedChildren="開" unCheckedChildren="關" />
+                          <Switch checkedChildren="On" unCheckedChildren="Off" />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -1934,8 +1896,8 @@ export default function CreateTask() {
                     key: 'docker-advanced',
                     forceRender: true,
                     label: (
-                      <span className="text-gray-300 text-sm">
-                        <SettingOutlined className="mr-2" />進階設定:Node.js、自訂 RUN 指令、環境變數
+                      <span className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                        <SettingOutlined className="mr-2" />Advanced: Node.js, custom RUN commands, environment variables
                       </span>
                     ),
                     children: (
@@ -1944,43 +1906,43 @@ export default function CreateTask() {
                           <Col xs={24} md={8}>
                             <Form.Item
                               name="docker_install_node"
-                              label={<span className="text-gray-300">安裝 Node.js</span>}
+                              label={<span style={{ color: 'var(--ink-muted)' }}>Install Node.js</span>}
                               valuePropName="checked"
-                              tooltip="在 Docker image 內安裝 Node.js 20.x"
+                              tooltip="Installs Node.js 20.x inside the Docker image."
                             >
-                              <Switch checkedChildren="是" unCheckedChildren="否" />
+                              <Switch checkedChildren="On" unCheckedChildren="Off" />
                             </Form.Item>
                           </Col>
                         </Row>
                         <Form.Item
                           name="docker_env_vars"
-                          label={<span className="text-gray-300">執行期 Docker ENV</span>}
-                          tooltip="每行一組 KEY=VALUE。以 # 開頭的行會被略過。"
+                          label={<span style={{ color: 'var(--ink-muted)' }}>Runtime Docker ENV</span>}
+                          tooltip="One KEY=VALUE per line. Lines starting with # are skipped."
                         >
                           <Input.TextArea
                             rows={3}
                             placeholder={"GOOGLE_API_KEY=xxxx\nMY_SECRET=yyyy"}
                             className="input-field"
-                            style={{ fontFamily: 'monospace' }}
+                            style={{ fontFamily: 'var(--font-mono)' }}
                           />
                         </Form.Item>
                         <Form.Item
                           name="docker_custom_commands"
-                          label={<span className="text-gray-300">自訂指令</span>}
-                          tooltip="每行一個指令。只允許 apt-get、pip、npm、mkdir、chmod 等。"
+                          label={<span style={{ color: 'var(--ink-muted)' }}>Custom commands</span>}
+                          tooltip="One command per line. Only apt-get, pip, npm, mkdir, chmod, and similar are allowed."
                         >
                           <Input.TextArea
                             rows={3}
                             placeholder={"apt-get update && apt-get install -y --no-install-recommends curl"}
                             className="input-field"
-                            style={{ fontFamily: 'monospace' }}
+                            style={{ fontFamily: 'var(--font-mono)' }}
                           />
                         </Form.Item>
                       </>
                     ),
                   }]}
                 />
-              </Card>
+              </div>
             )}
           </div>
 
@@ -1988,76 +1950,66 @@ export default function CreateTask() {
               Step: Review — confirmation summary
               ════════════════════════════════════════════ */}
           <div style={{ display: currentStepKey === 'review' ? 'block' : 'none' }}>
-            <h3 className="text-lg font-medium text-white mb-4">確認打包設定</h3>
-            <p className="text-gray-400 text-sm mb-6">請在啟動打包前確認以下所有設定。</p>
+            <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--ink)' }}>Review your build</h3>
+            <p className="text-sm mb-6" style={{ color: 'var(--ink-muted)' }}>Check everything below before you start the build.</p>
 
             {/* Project Info Summary */}
-            <Card
-              size="small"
-              title={<span className="text-cyber-400"><AppstoreOutlined className="mr-2" />專案</span>}
-              className="mb-4"
-              style={cardStyle}
-              styles={{ header: cardHeaderStyle }}
-            >
-              <SummaryRow label="專案名稱" value={form.getFieldValue('project_name')} />
-              <SummaryRow label="專案類型" value={projectType && typeLabels[projectType] ? typeLabels[projectType].text : projectType} />
+            <div className="glass-card p-5 mb-4">
+              <SectionHeader icon={<AppstoreOutlined />} title="Project" />
+              <SummaryRow label="Name" value={form.getFieldValue('project_name')} />
+              <SummaryRow label="Type" value={projectType && typeLabels[projectType] ? typeLabels[projectType].text : projectType} />
               {sourceType === 'git' ? (
                 <>
-                  <SummaryRow label="來源" value="Git URL" highlight />
-                  <SummaryRow label="Git 網址" value={form.getFieldValue('git_url')} mono />
+                  <SummaryRow label="Source" value="Git URL" highlight />
+                  <SummaryRow label="Git URL" value={form.getFieldValue('git_url')} mono />
                   <SummaryRow
-                    label={form.getFieldValue('git_ref_type') === 'tag' ? '標籤' : '分支'}
+                    label={form.getFieldValue('git_ref_type') === 'tag' ? 'Tag' : 'Branch'}
                     value={form.getFieldValue('git_ref')}
                     mono
                   />
                 </>
               ) : (
                 <>
-                  <SummaryRow label="來源" value="本機路徑" />
-                  <SummaryRow label="專案路徑" value={form.getFieldValue('project_path')} mono />
+                  <SummaryRow label="Source" value="Local path" />
+                  <SummaryRow label="Project path" value={form.getFieldValue('project_path')} mono />
                 </>
               )}
               {/* output_dir is a Nuitka/backend concept and only editable in
                   the backend step; frontend-only builds use frontend_output_dir
                   instead, so keep this row out of their summary. */}
               {hasBackend && (
-                <SummaryRow label="輸出目錄" value={form.getFieldValue('output_dir') || 'dist'} mono />
+                <SummaryRow label="Output directory" value={form.getFieldValue('output_dir') || 'dist'} mono />
               )}
-            </Card>
+            </div>
 
             {/* Backend Summary */}
             {hasBackend && (
-              <Card
-                size="small"
-                title={<span className="text-cyber-400"><CodeOutlined className="mr-2" />後端 (Nuitka)</span>}
-                className="mb-4"
-                style={cardStyle}
-                styles={{ header: cardHeaderStyle }}
-              >
-                <SummaryRow label="Python 版本" value={form.getFieldValue('python_version')} />
-                <SummaryRow label="進入點" value={form.getFieldValue('entry_point')} mono />
-                <SummaryRow label="二進位執行檔" value={form.getFieldValue('output_name') || (form.getFieldValue('entry_point') || 'main').replace(/\.py$/, '')} mono />
-                <SummaryRow label="Nuitka 模式" value={form.getFieldValue('pack_mode') === 'external' ? 'External (libs/,建議)' : 'Full (打包時間非常長,8hr 起跳)'} />
-                <SummaryRow label="單檔執行檔" value={form.getFieldValue('onefile') ? '是' : '否'} />
-                <SummaryRow label="縮小體積" value={form.getFieldValue('enable_anti_bloat') ? '開 (anti-bloat)' : '關'} />
-                <SummaryRow label="打包後驗證" value={form.getFieldValue('verify_after_build') ? '開(編完自動跑跑看)' : '關'} highlight={form.getFieldValue('verify_after_build')} />
+              <div className="glass-card p-5 mb-4">
+                <SectionHeader icon={<CodeOutlined />} title="Backend (Nuitka)" />
+                <SummaryRow label="Python version" value={form.getFieldValue('python_version')} />
+                <SummaryRow label="Entry point" value={form.getFieldValue('entry_point')} mono />
+                <SummaryRow label="Binary name" value={form.getFieldValue('output_name') || (form.getFieldValue('entry_point') || 'main').replace(/\.py$/, '')} mono />
+                <SummaryRow label="Nuitka mode" value={form.getFieldValue('pack_mode') === 'external' ? 'External (libs/, recommended)' : 'Full (very long build, 8h+)'} />
+                <SummaryRow label="Single-file binary" value={form.getFieldValue('onefile') ? 'On' : 'Off'} />
+                <SummaryRow label="Shrink binary" value={form.getFieldValue('enable_anti_bloat') ? 'On (anti-bloat)' : 'Off'} />
+                <SummaryRow label="Verify after build" value={form.getFieldValue('verify_after_build') ? 'On (runs the binary once)' : 'Off'} highlight={form.getFieldValue('verify_after_build')} />
                 {form.getFieldValue('generate_report') && (
-                  <SummaryRow label="編譯報告" value="會產生 compilation-report.xml" />
+                  <SummaryRow label="Compilation report" value="compilation-report.xml will be generated" />
                 )}
                 {form.getFieldValue('include_package_data') && (
-                  <SummaryRow label="納入套件資料檔" value={form.getFieldValue('include_package_data')} mono />
+                  <SummaryRow label="Package data files" value={form.getFieldValue('include_package_data')} mono />
                 )}
                 {(form.getFieldValue('nuitka_jobs') ?? 0) > 0 && (
-                  <SummaryRow label="CPU 並行數" value={`${form.getFieldValue('nuitka_jobs')} 核`} />
+                  <SummaryRow label="CPU parallelism" value={`${form.getFieldValue('nuitka_jobs')} cores`} />
                 )}
                 {form.getFieldValue('include_packages') && (
-                  <SummaryRow label="強制納入套件" value={form.getFieldValue('include_packages')} mono />
+                  <SummaryRow label="Force-included packages" value={form.getFieldValue('include_packages')} mono />
                 )}
                 {(() => {
                   const group = form.getFieldValue('dependency_group') as string | undefined
                   return group ? (
                     <SummaryRow
-                      label="依賴群組"
+                      label="Dependency group"
                       value={`--group ${group}`}
                       mono
                       highlight
@@ -2065,94 +2017,84 @@ export default function CreateTask() {
                   ) : null
                 })()}
                 {selectedDirs.length > 0 && (
-                  <SummaryRow label="打包的 source code" value={selectedDirs.join(', ')} mono />
+                  <SummaryRow label="Bundled source code" value={selectedDirs.join(', ')} mono />
                 )}
                 {selectedDataDirs.length > 0 && (
-                  <SummaryRow label="資料目錄" value={selectedDataDirs.join(', ')} mono />
+                  <SummaryRow label="Data directories" value={selectedDataDirs.join(', ')} mono />
                 )}
-              </Card>
+              </div>
             )}
 
             {/* Frontend Summary */}
             {showFrontendSettings && (
-              <Card
-                size="small"
-                title={<span className="text-matrix-400"><GlobalOutlined className="mr-2" />前端</span>}
-                className="mb-4"
-                style={cardStyle}
-                styles={{ header: cardHeaderStyle }}
-              >
-                <SummaryRow label="前端目錄" value={form.getFieldValue('frontend_dir') || '.'} mono />
-                <SummaryRow label="建置工具" value={form.getFieldValue('frontend_build_tool') || 'npm'} />
-                <SummaryRow label="建置指令" value={`${form.getFieldValue('frontend_build_tool') || 'npm'} run ${form.getFieldValue('frontend_build_command') || 'build'}`} mono />
-                <SummaryRow label="輸出目錄" value={form.getFieldValue('frontend_output_dir') || 'dist'} mono />
+              <div className="glass-card p-5 mb-4">
+                <SectionHeader icon={<GlobalOutlined />} title="Frontend" tone="matrix" />
+                <SummaryRow label="Frontend directory" value={form.getFieldValue('frontend_dir') || '.'} mono />
+                <SummaryRow label="Build tool" value={form.getFieldValue('frontend_build_tool') || 'npm'} />
+                <SummaryRow label="Build command" value={`${form.getFieldValue('frontend_build_tool') || 'npm'} run ${form.getFieldValue('frontend_build_command') || 'build'}`} mono />
+                <SummaryRow label="Output directory" value={form.getFieldValue('frontend_output_dir') || 'dist'} mono />
                 {form.getFieldValue('frontend_env_content') && (
-                  <SummaryRow label="Env 檔名" value={form.getFieldValue('frontend_env_filename') || '.env'} mono />
+                  <SummaryRow label="Env filename" value={form.getFieldValue('frontend_env_filename') || '.env'} mono />
                 )}
                 {form.getFieldValue('frontend_env_content') && (
                   <div className="flex py-1.5">
-                    <span className="text-gray-500 text-sm w-32 flex-shrink-0">Env 內容</span>
-                    <pre className="text-gray-300 text-sm font-mono whitespace-pre-wrap m-0 flex-1 bg-black/20 rounded px-2 py-1" style={{ maxHeight: 120, overflow: 'auto' }}>
+                    <span className="text-sm w-36 flex-shrink-0" style={{ color: 'var(--ink-faint)' }}>Env content</span>
+                    <pre className="text-sm font-mono whitespace-pre-wrap m-0 flex-1 bg-void-950 rounded px-2 py-1" style={{ color: 'var(--ink)', maxHeight: 120, overflow: 'auto' }}>
                       {form.getFieldValue('frontend_env_content')}
                     </pre>
                   </div>
                 )}
-              </Card>
+              </div>
             )}
 
             {/* Docker Summary */}
-            <Card
-              size="small"
-              title={<span className="text-purple-400"><CloudServerOutlined className="mr-2" />Docker</span>}
-              className="mb-4"
-              style={cardStyle}
-              styles={{ header: cardHeaderStyle }}
-            >
-              <SummaryRow label="啟用 Docker" value={dockerEnabled ? '是' : '否'} highlight={dockerEnabled} />
+            <div className="glass-card p-5 mb-4">
+              <SectionHeader icon={<CloudServerOutlined />} title="Docker" />
+              <SummaryRow label="Docker enabled" value={dockerEnabled ? 'Yes' : 'No'} highlight={dockerEnabled} />
               {dockerEnabled && (
                 <>
-                  <SummaryRow label="Image 名稱" value={form.getFieldValue('docker_image_name') || '(自動)'} mono />
-                  <SummaryRow label="基底 Image" value={form.getFieldValue('docker_base_image') || 'python:3.13-slim'} mono />
-                  <SummaryRow label="對外連接埠" value={form.getFieldValue('docker_expose_port') || 8000} />
+                  <SummaryRow label="Image name" value={form.getFieldValue('docker_image_name') || '(auto)'} mono />
+                  <SummaryRow label="Base image" value={form.getFieldValue('docker_base_image') || 'python:3.13-slim'} mono />
+                  <SummaryRow label="Exposed port" value={form.getFieldValue('docker_expose_port') || 8000} />
                   {projectType === 'frontend_only' && form.getFieldValue('docker_api_proxy') && (
-                    <SummaryRow label="API Proxy" value={form.getFieldValue('docker_api_proxy')} mono />
+                    <SummaryRow label="API proxy" value={form.getFieldValue('docker_api_proxy')} mono />
                   )}
                   {projectType === 'frontend_only' && (
                     <>
                       <SummaryRow
-                        label="上傳上限"
+                        label="Max upload"
                         value={(form.getFieldValue('nginx_client_max_body_size') || '0') === '0'
-                          ? '0(不限)'
+                          ? '0 (unlimited)'
                           : form.getFieldValue('nginx_client_max_body_size')}
                         mono
                       />
-                      <SummaryRow label="Proxy 逾時" value={form.getFieldValue('nginx_proxy_read_timeout') || '300s'} mono />
-                      <SummaryRow label="串流模式" value={form.getFieldValue('nginx_streaming') === false ? '關(nginx 會緩衝整包回應)' : '開'} />
-                      <SummaryRow label="gzip 壓縮" value={form.getFieldValue('nginx_gzip') ? '開' : '關'} />
+                      <SummaryRow label="Proxy timeout" value={form.getFieldValue('nginx_proxy_read_timeout') || '300s'} mono />
+                      <SummaryRow label="Streaming mode" value={form.getFieldValue('nginx_streaming') === false ? 'Off (Nginx buffers the whole response)' : 'On'} />
+                      <SummaryRow label="gzip compression" value={form.getFieldValue('nginx_gzip') ? 'On' : 'Off'} />
                     </>
                   )}
                   {form.getFieldValue('docker_install_node') && (
-                    <SummaryRow label="安裝 Node.js" value="是" />
+                    <SummaryRow label="Install Node.js" value="Yes" />
                   )}
                   {form.getFieldValue('docker_env_vars') && (
                     <div className="flex py-1.5">
-                      <span className="text-gray-500 text-sm w-32 flex-shrink-0">ENV 變數</span>
-                      <pre className="text-gray-300 text-sm font-mono whitespace-pre-wrap m-0 flex-1 bg-black/20 rounded px-2 py-1" style={{ maxHeight: 100, overflow: 'auto' }}>
+                      <span className="text-sm w-36 flex-shrink-0" style={{ color: 'var(--ink-faint)' }}>ENV variables</span>
+                      <pre className="text-sm font-mono whitespace-pre-wrap m-0 flex-1 bg-void-950 rounded px-2 py-1" style={{ color: 'var(--ink)', maxHeight: 100, overflow: 'auto' }}>
                         {form.getFieldValue('docker_env_vars')}
                       </pre>
                     </div>
                   )}
                   {form.getFieldValue('docker_custom_commands') && (
                     <div className="flex py-1.5">
-                      <span className="text-gray-500 text-sm w-32 flex-shrink-0">自訂指令</span>
-                      <pre className="text-gray-300 text-sm font-mono whitespace-pre-wrap m-0 flex-1 bg-black/20 rounded px-2 py-1" style={{ maxHeight: 100, overflow: 'auto' }}>
+                      <span className="text-sm w-36 flex-shrink-0" style={{ color: 'var(--ink-faint)' }}>Custom commands</span>
+                      <pre className="text-sm font-mono whitespace-pre-wrap m-0 flex-1 bg-void-950 rounded px-2 py-1" style={{ color: 'var(--ink)', maxHeight: 100, overflow: 'auto' }}>
                         {form.getFieldValue('docker_custom_commands')}
                       </pre>
                     </div>
                   )}
                 </>
               )}
-            </Card>
+            </div>
           </div>
 
           {/* ════════════════════════════════════════════
@@ -2160,9 +2102,9 @@ export default function CreateTask() {
               ════════════════════════════════════════════ */}
           {/* Next-step preview helper text — keeps user oriented */}
           {!isLastStep && activeStepList[currentStep + 1] && (
-            <div className="mt-6 text-xs text-gray-500 text-right">
-              下一步:<span className="text-cyber-400">{activeStepList[currentStep + 1].title}</span>
-              <span className="text-gray-600 ml-2">({activeStepList[currentStep + 1].description})</span>
+            <div className="mt-6 text-xs text-right" style={{ color: 'var(--ink-faint)' }}>
+              Next: <span className="text-cyber-400">{activeStepList[currentStep + 1].title}</span>
+              <span className="ml-2" style={{ color: 'var(--ink-faint)' }}>({activeStepList[currentStep + 1].description})</span>
             </div>
           )}
           <div className="flex gap-3 mt-3">
@@ -2174,7 +2116,7 @@ export default function CreateTask() {
                 onClick={goBack}
                 style={{ height: 48 }}
               >
-                上一步
+                Back
               </Button>
             )}
 
@@ -2188,7 +2130,7 @@ export default function CreateTask() {
                   className="btn-cyber"
                   style={{ width: '100%', height: 48 }}
                 >
-                  下一步 <ArrowRightOutlined />
+                  Next <ArrowRightOutlined />
                 </Button>
               ) : (
                 <Button
@@ -2202,7 +2144,7 @@ export default function CreateTask() {
                   style={{ width: '100%', height: 48 }}
                   onClick={handleManualSubmit}
                 >
-                  {isRebuild ? '開始重新打包' : '開始打包'}
+                  {isRebuild ? 'Start rebuild' : 'Start build'}
                 </Button>
               )}
             </div>
@@ -2210,28 +2152,28 @@ export default function CreateTask() {
         </Form>
       </div>
 
-      {/* First-visit tour — in Traditional Chinese */}
+      {/* First-visit tour */}
       <Tour
         open={tourOpen}
         onClose={closeTour}
         steps={
           [
             {
-              title: '選擇來源方式',
+              title: 'Choose a source',
               description:
-                '可以使用伺服器上既有的本機路徑，也可以直接貼上 GitLab 的 HTTP(S) 網址讓系統幫你 clone。',
+                'Use a local path that already exists on the server, or paste a GitLab HTTP(S) URL and let the server clone it for you.',
               target: () => sourceModeRef.current,
             },
             {
-              title: '輸入 Git URL',
+              title: 'Enter the Git URL',
               description:
-                '選擇 Git URL 模式後，貼上 repo 的 HTTPS 網址，系統會自動取得可用的分支與標籤。Token 由伺服器端設定，請勿寫在網址裡。',
+                'In Git URL mode, paste the repo\'s HTTPS URL and the server fetches the available branches and tags. The access token is set server-side — don\'t put it in the URL.',
               target: () => gitUrlRef.current,
             },
             {
-              title: '選擇分支或標籤',
+              title: 'Pick a branch or tag',
               description:
-                '分支會隨時間更新，標籤代表固定版本。也可以直接輸入清單裡沒有的名稱。',
+                'A branch keeps moving over time; a tag points at a fixed version. You can also type a name that isn\'t in the list.',
               target: () => refSelectRef.current,
             },
           ] as TourProps['steps']

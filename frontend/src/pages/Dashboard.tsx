@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Typography, Empty, Row, Col, message, notification, Spin, Button } from 'antd'
+import { Empty, message, notification, Spin, Button } from 'antd'
 import { RocketOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import TaskCard from '../components/TaskCard'
@@ -8,8 +8,25 @@ import BuildStatsPanel from '../components/BuildStatsPanel'
 import { taskApi } from '../api/client'
 import { useTaskStore } from '../store/taskStore'
 import { getErrorDetail } from '../utils/errors'
+import { STATUS_META } from '../utils/statusMeta'
 
-const { Title } = Typography
+/** A single KPI tile in the landing header, GitHub-Actions style: a big mono
+ *  figure over a quiet uppercase label, colored by outcome. */
+function Kpi({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="stat-card">
+      <div
+        className="text-xs uppercase tracking-wider"
+        style={{ color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}
+      >
+        {label}
+      </div>
+      <div className="text-2xl font-semibold mt-1" style={{ color, fontFamily: 'var(--font-display)' }}>
+        {value}
+      </div>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -50,8 +67,8 @@ export default function Dashboard() {
       for (const [id, name] of prevActiveRef.current) {
         if (!current.has(id)) {
           notification.info({
-            message: '任務已結束',
-            description: `「${name}」已離開進行中清單，點擊查看結果。`,
+            message: 'Task finished',
+            description: `"${name}" left the in-progress list. Click to view the result.`,
             duration: 6,
             onClick: () => navigate(`/task/${id}`),
           })
@@ -65,11 +82,11 @@ export default function Dashboard() {
   const cancelMutation = useMutation({
     mutationFn: taskApi.cancel,
     onSuccess: () => {
-      message.success('任務已取消')
+      message.success('Task cancelled')
       queryClient.invalidateQueries({ queryKey: ['activeTasks'] })
     },
     onError: (err) => {
-      message.error(getErrorDetail(err, '取消任務失敗'))
+      message.error(getErrorDetail(err, 'Failed to cancel task'))
     },
   })
 
@@ -78,22 +95,38 @@ export default function Dashboard() {
   }
 
   const taskList = Array.from(tasks.values())
+  const runningCount = taskList.length
+  const summary = buildStats?.summary
+  const fmt = (n: number | undefined) => (n === undefined ? '—' : String(n))
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-        <Col>
-          <Title level={3} style={{ margin: 0 }}>
-            儀表板
-          </Title>
-        </Col>
-      </Row>
+      {/* Page header — title + subtitle, matching the History landing. */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0, color: 'var(--ink)' }}>Dashboard</h1>
+        <p style={{ margin: '4px 0 0', color: 'var(--ink-muted)' }}>
+          An overview of your recent build activity and everything running right now.
+        </p>
+      </div>
+
+      {/* KPI row — total / passed / failed / running, colored by outcome. */}
+      <div
+        className="grid gap-4 mb-6"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}
+      >
+        <Kpi label="Total builds" value={fmt(summary?.total)} color="var(--ink)" />
+        <Kpi label="Passed" value={fmt(summary?.completed)} color={STATUS_META.completed.color} />
+        <Kpi label="Failed" value={fmt(summary?.failed)} color={STATUS_META.failed.color} />
+        <Kpi label="Running" value={String(runningCount)} color={STATUS_META.running.color} />
+      </div>
 
       {buildStats && <BuildStatsPanel stats={buildStats} />}
 
-      <Title level={5} style={{ marginBottom: 12 }}>
-        進行中的任務
-      </Title>
+      <h2
+        style={{ fontSize: 16, fontWeight: 600, margin: '0 0 12px', color: 'var(--ink)' }}
+      >
+        In progress
+      </h2>
 
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: 40 }}>
@@ -103,24 +136,24 @@ export default function Dashboard() {
         <Empty
           description={
             <div>
-              <div className="text-gray-300">目前沒有進行中的任務</div>
-              <div className="text-gray-500 text-xs mt-1">建立一個任務,把專案打包成執行檔或 Docker image</div>
+              <div style={{ color: 'var(--ink-muted)' }}>No builds in progress</div>
+              <div className="text-xs mt-1" style={{ color: 'var(--ink-faint)' }}>
+                Start a build to package a project into an executable or a Docker image.
+              </div>
             </div>
           }
           style={{ padding: 48 }}
         >
           <Button type="primary" icon={<RocketOutlined />} size="large" onClick={() => navigate('/create')}>
-            建立第一個任務
+            Create your first build
           </Button>
         </Empty>
       ) : (
-        <Row gutter={[16, 16]}>
+        <div className="flex flex-col gap-3">
           {taskList.map((task) => (
-            <Col xs={24} lg={12} xl={8} key={task.id}>
-              <TaskCard task={task} onCancel={handleCancel} />
-            </Col>
+            <TaskCard key={task.id} task={task} onCancel={handleCancel} />
           ))}
-        </Row>
+        </div>
       )}
     </div>
   )

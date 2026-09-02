@@ -27,9 +27,22 @@ import { extractErrorLines } from '../utils/diagnose'
 import { getErrorDetail } from '../utils/errors'
 
 const projectTypeLabels: Record<ProjectType, { label: string; color: string; icon: React.ReactNode }> = {
-  backend_only: { label: '後端', color: 'blue', icon: <CloudServerOutlined /> },
-  frontend_only: { label: '前端', color: 'green', icon: <DesktopOutlined /> },
-  fullstack: { label: '全端', color: 'purple', icon: <AppstoreOutlined /> },
+  backend_only: { label: 'Backend', color: 'blue', icon: <CloudServerOutlined /> },
+  frontend_only: { label: 'Frontend', color: 'green', icon: <DesktopOutlined /> },
+  fullstack: { label: 'Full-stack', color: 'purple', icon: <AppstoreOutlined /> },
+}
+
+// Relative time in the GitHub-Actions register ("3 minutes ago").
+const timeAgo = (iso: string): string => {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m} minute${m === 1 ? '' : 's'} ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h} hour${h === 1 ? '' : 's'} ago`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `${d} day${d === 1 ? '' : 's'} ago`
+  return new Date(iso).toLocaleDateString()
 }
 
 export default function HistoryDetail() {
@@ -62,39 +75,43 @@ export default function HistoryDetail() {
   useEffect(() => {
     taskApi.getSystemInfo().then((info) => {
       if (info.git_workspace_dir) setWorkspaceDir(info.git_workspace_dir)
-    }).catch((e) => console.warn('系統資訊載入失敗，改用預設值', e))
+    }).catch((e) => console.warn('Failed to load system info; falling back to the default value.', e))
   }, [])
 
   const handleDeleteWorkspace = () => {
     if (!record) return
     Modal.confirm({
-      title: '確定要刪除此工作區嗎？',
+      title: 'Delete this workspace?',
       icon: <ExclamationCircleOutlined style={{ color: '#f27d7d' }} />,
       content: (
         <div>
-          <p>這會刪除 <code>{workspaceDir}/{record.task_id}</code> 底下的所有內容，包括 clone 下來的原始碼與 <code>.venv</code>。</p>
+          <p>
+            This removes everything under <code>{workspaceDir}/{record.task_id}</code>, including the
+            cloned source and its <code>.venv</code>.
+          </p>
           {record.status === 'completed' && !record.config?.docker_enabled && (
             <p className="text-orange-400">
-              ⚠️ 這是非 Docker 的完成任務，刪除後將<b>無法再下載</b> Output 檔案。
+              ⚠️ This is a non-Docker completed run — once deleted, its output <b>can no longer be
+              downloaded</b>.
             </p>
           )}
           <p className="text-gray-400 text-sm mt-2">
-            任務的歷史紀錄不會被刪除，仍可在 History 裡看到。
+            The history record is kept, so you can still find this run in History.
           </p>
         </div>
       ),
-      okText: '確定刪除',
+      okText: 'Delete',
       okButtonProps: { danger: true },
-      cancelText: '取消',
+      cancelText: 'Cancel',
       onOk: async () => {
         setDeletingWorkspace(true)
         try {
           await taskApi.deleteTaskWorkspace(record.task_id)
-          message.success('工作區已刪除')
+          message.success('Workspace deleted.')
           queryClient.invalidateQueries({ queryKey: ['history'] })
         } catch (err: unknown) {
           const e = err as { response?: { data?: { detail?: string } } }
-          message.error(e.response?.data?.detail || '刪除工作區失敗')
+          message.error(e.response?.data?.detail || 'Could not delete the workspace. Please try again.')
         } finally {
           setDeletingWorkspace(false)
         }
@@ -113,9 +130,11 @@ export default function HistoryDetail() {
   if (!record) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-xl text-gray-400 mb-4">找不到此紀錄</h2>
+        <h2 className="text-xl mb-4" style={{ color: 'var(--ink-muted)' }}>
+          We couldn't find this run.
+        </h2>
         <button onClick={() => navigate('/history')} className="btn-cyber">
-          返回歷史紀錄
+          Back to history
         </button>
       </div>
     )
@@ -141,55 +160,146 @@ export default function HistoryDetail() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    message.success('已複製')
+    message.success('Copied to clipboard.')
   }
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* Run header — status glyph + run title + a muted meta line, GitHub-Actions style. */}
+      <div className="flex items-start gap-3 mb-6">
         <button
           onClick={() => navigate('/history')}
-          aria-label="返回歷史紀錄"
-          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          aria-label="Back to history"
+          className="p-2 rounded-lg mt-0.5 transition-colors"
+          style={{ color: 'var(--ink-muted)' }}
         >
           <ArrowLeftOutlined className="text-lg" />
         </button>
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-            {record.project_name}
-          </h1>
-          <p className="text-sm text-gray-400">
-            任務 ID: {record.task_id.slice(0, 8)}...
-            <Tooltip title="複製完整 ID">
-              <CopyOutlined
-                className="ml-2 cursor-pointer hover:text-white"
+
+        <span
+          className="mt-0.5 flex-shrink-0"
+          style={{ color: status.color, fontSize: 22, display: 'inline-flex' }}
+        >
+          {status.icon}
+        </span>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1
+              className="text-xl font-semibold"
+              style={{ color: 'var(--ink)', fontFamily: 'var(--font-display)' }}
+            >
+              {record.project_name}
+            </h1>
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium uppercase"
+              style={{ backgroundColor: status.bgColor, color: status.color }}
+            >
+              {status.label}
+            </span>
+          </div>
+
+          <div
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm mt-1"
+            style={{ color: 'var(--ink-faint)' }}
+          >
+            {projectType && <span>{projectType.label}</span>}
+            {config?.docker_enabled && (
+              <>
+                <span aria-hidden>·</span>
+                <span>Docker</span>
+              </>
+            )}
+            <span aria-hidden>·</span>
+            <span>Triggered by {record.user_name}</span>
+            <span aria-hidden>·</span>
+            <span>Started {timeAgo(record.start_time)}</span>
+            <span aria-hidden>·</span>
+            <span className="font-mono">{formatDuration(record.start_time, record.end_time)}</span>
+            <Tooltip title="Copy full ID">
+              <span
+                className="font-mono ml-1 cursor-pointer hover:text-cyber-300 inline-flex items-center gap-1"
                 onClick={() => copyToClipboard(record.task_id)}
-              />
+              >
+                #{record.task_id.slice(0, 8)}
+                <CopyOutlined />
+              </span>
             </Tooltip>
-          </p>
+          </div>
+        </div>
+
+        {/* Primary actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {config && (
+            <Button
+              icon={<RedoOutlined />}
+              onClick={() =>
+                navigate('/create', {
+                  state: {
+                    rebuild: true,
+                    projectName: record.project_name,
+                    config: record.config,
+                  },
+                })
+              }
+            >
+              Rebuild
+            </Button>
+          )}
+          {record.status === 'completed' && (
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              loading={downloading}
+              onClick={async () => {
+                setDownloading(true)
+                try {
+                  triggerUrlDownload(await taskApi.getOutputDownloadUrl(record.task_id))
+                  message.success('Download started.')
+                } catch (err: unknown) {
+                  message.error(getErrorDetail(err, 'Could not download the output. Please try again.'))
+                } finally {
+                  setDownloading(false)
+                }
+              }}
+            >
+              Download output
+            </Button>
+          )}
+          {config?.source_type === 'git' &&
+            record.status !== 'running' &&
+            record.status !== 'pending' && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                loading={deletingWorkspace}
+                onClick={handleDeleteWorkspace}
+              >
+                Delete workspace
+              </Button>
+            )}
         </div>
       </div>
 
       {/* Failure diagnosis — diagnosis is persisted in result so it shows
           even for old records whose logs were already evicted. */}
       {record.status === 'failed' && (
-        <div
-          className="glass-card p-5 mb-6"
-          style={{ borderLeft: '3px solid #f27d7d', background: 'rgba(239,68,68,0.06)' }}
-        >
+        <div className="glass-card p-5 mb-6 border-l-2 border-alert-500 bg-alert-500/5">
           <div className="flex items-center gap-2 mb-3">
-            <CloseCircleOutlined style={{ color: '#f27d7d' }} />
-            <h3 className="text-base font-medium text-alert-400">打包失敗</h3>
+            <CloseCircleOutlined className="text-alert-400" />
+            <h3 className="text-base font-medium text-alert-400">Build failed</h3>
           </div>
           {record.result?.diagnosis && record.result.diagnosis.length > 0 ? (
             <div className="space-y-3 mb-3">
               {record.result.diagnosis.map((d, i) => (
-                <div key={i} className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
+                <div key={i} className="rounded-lg p-3 bg-void-950">
                   <div className="text-sm text-alert-400 font-medium mb-1">⚠ {d.problem}</div>
-                  <div className="text-sm text-cyber-200">建議：{d.suggestion}</div>
+                  <div className="text-sm text-cyber-200">Suggested fix: {d.suggestion}</div>
                   {d.evidence && (
-                    <code className="block text-xs text-gray-500 mt-1.5 font-mono break-all">
+                    <code
+                      className="block text-xs mt-1.5 font-mono break-all"
+                      style={{ color: 'var(--ink-faint)' }}
+                    >
                       {d.evidence}
                     </code>
                   )}
@@ -219,7 +329,9 @@ export default function HistoryDetail() {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-500">此任務未留下自動診斷，請對照下方日誌。</p>
+            <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+              This run left no automatic diagnosis. Check the log below for details.
+            </p>
           )}
           {(() => {
             // Prefer the server-persisted lines: build logs are evicted from
@@ -231,10 +343,17 @@ export default function HistoryDetail() {
               : extractErrorLines(logs)
             return errLines.length > 0 ? (
               <div>
-                <div className="text-xs text-gray-500 mb-1.5 uppercase tracking-wider">關鍵錯誤行</div>
-                <div className="rounded-lg p-3 font-mono text-xs space-y-1" style={{ background: 'rgba(0,0,0,0.35)' }}>
+                <div
+                  className="text-xs mb-1.5 uppercase tracking-wider"
+                  style={{ color: 'var(--ink-faint)' }}
+                >
+                  Key error lines
+                </div>
+                <div className="rounded-lg p-3 font-mono text-xs space-y-1 bg-void-950">
                   {errLines.map((l, i) => (
-                    <div key={i} className="text-alert-400 break-all">{l}</div>
+                    <div key={i} className="text-alert-400 break-all">
+                      {l}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -247,31 +366,31 @@ export default function HistoryDetail() {
       {record.result && (
         <div className="glass-card p-5 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-medium text-white">打包成果</h3>
-            <div className="flex items-center gap-3">
-              {typeof record.result.duration_seconds === 'number' && (
-                <span className="text-xs text-gray-400">
-                  耗時 {record.result.duration_seconds >= 60
-                    ? `${Math.floor(record.result.duration_seconds / 60)}m ${Math.round(record.result.duration_seconds % 60)}s`
-                    : `${record.result.duration_seconds}s`}
-                </span>
-              )}
-              {record.result.verify && (
-                <span
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: VERIFY_META[record.result.verify.status].bg, color: VERIFY_META[record.result.verify.status].color }}
-                >
-                  {VERIFY_META[record.result.verify.status].icon}
-                  {VERIFY_META[record.result.verify.status].label}
-                </span>
-              )}
-            </div>
+            <h3 className="text-base font-medium" style={{ color: 'var(--ink)' }}>
+              Build result
+            </h3>
+            {record.result.verify && (
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: VERIFY_META[record.result.verify.status].bg,
+                  color: VERIFY_META[record.result.verify.status].color,
+                }}
+              >
+                {VERIFY_META[record.result.verify.status].icon}
+                {VERIFY_META[record.result.verify.status].label}
+              </span>
+            )}
           </div>
 
           {record.result.verify?.detail && (
             <div
               className="text-sm mb-4 px-3 py-2 rounded-lg"
-              style={{ background: VERIFY_META[record.result.verify.status].bg, color: VERIFY_META[record.result.verify.status].color, lineHeight: 1.6 }}
+              style={{
+                background: VERIFY_META[record.result.verify.status].bg,
+                color: VERIFY_META[record.result.verify.status].color,
+                lineHeight: 1.6,
+              }}
             >
               {record.result.verify.detail}
             </div>
@@ -279,20 +398,32 @@ export default function HistoryDetail() {
 
           {record.result.artifact && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                <div className="text-xs text-gray-500 mb-1"><FileZipOutlined className="mr-1" />產物大小</div>
-                <div className="text-lg font-semibold text-cyber-300">{record.result.artifact.size_human}</div>
+              <div className="rounded-lg p-3 bg-void-950">
+                <div className="text-xs mb-1" style={{ color: 'var(--ink-faint)' }}>
+                  <FileZipOutlined className="mr-1" />
+                  Artifact size
+                </div>
+                <div className="text-lg font-semibold text-cyber-300">
+                  {record.result.artifact.size_human}
+                </div>
               </div>
-              <div className="rounded-lg p-3" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                <div className="text-xs text-gray-500 mb-1">檔案數</div>
-                <div className="text-lg font-semibold text-gray-200">{record.result.artifact.file_count}</div>
+              <div className="rounded-lg p-3 bg-void-950">
+                <div className="text-xs mb-1" style={{ color: 'var(--ink-faint)' }}>
+                  File count
+                </div>
+                <div className="text-lg font-semibold" style={{ color: 'var(--ink)' }}>
+                  {record.result.artifact.file_count}
+                </div>
               </div>
               {record.result.artifact.sha256 && (
-                <div className="rounded-lg p-3 col-span-2" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                  <div className="text-xs text-gray-500 mb-1">SHA-256(主執行檔)</div>
-                  <Tooltip title="點擊複製完整雜湊值">
+                <div className="rounded-lg p-3 col-span-2 bg-void-950">
+                  <div className="text-xs mb-1" style={{ color: 'var(--ink-faint)' }}>
+                    SHA-256 (main binary)
+                  </div>
+                  <Tooltip title="Click to copy the full hash">
                     <code
-                      className="text-xs text-gray-300 font-mono break-all cursor-pointer hover:text-cyber-300"
+                      className="text-xs font-mono break-all cursor-pointer hover:text-cyber-300"
+                      style={{ color: 'var(--ink-muted)' }}
                       onClick={() => copyToClipboard(record.result?.artifact?.sha256 || '')}
                     >
                       {record.result.artifact.sha256.slice(0, 32)}…
@@ -305,15 +436,38 @@ export default function HistoryDetail() {
 
           {record.result.preflight && record.result.preflight.length > 0 && (
             <div>
-              <div className="text-xs text-gray-500 mb-2 uppercase tracking-wider">打包前預檢</div>
+              <div
+                className="text-xs mb-2 uppercase tracking-wider"
+                style={{ color: 'var(--ink-faint)' }}
+              >
+                Preflight checks
+              </div>
               <div className="space-y-1.5">
                 {record.result.preflight.map((c) => (
                   <div key={c.label} className="flex items-start gap-2 text-sm">
-                    <span style={{ color: c.passed ? '#56d6a1' : c.critical ? '#f27d7d' : '#f0bd5e', marginTop: 2 }}>
-                      {c.passed ? <CheckCircleOutlined /> : c.critical ? <CloseCircleOutlined /> : <WarningOutlined />}
+                    <span
+                      className={
+                        c.passed ? 'text-matrix-400' : c.critical ? 'text-alert-400' : 'text-signal-400'
+                      }
+                      style={{ marginTop: 2 }}
+                    >
+                      {c.passed ? (
+                        <CheckCircleOutlined />
+                      ) : c.critical ? (
+                        <CloseCircleOutlined />
+                      ) : (
+                        <WarningOutlined />
+                      )}
                     </span>
-                    <span className="text-gray-300 w-28 flex-shrink-0">{c.label}</span>
-                    <span className="text-gray-500 text-xs flex-1" style={{ lineHeight: 1.6 }}>{c.detail}</span>
+                    <span className="w-28 flex-shrink-0" style={{ color: 'var(--ink)' }}>
+                      {c.label}
+                    </span>
+                    <span
+                      className="text-xs flex-1"
+                      style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}
+                    >
+                      {c.detail}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -321,352 +475,291 @@ export default function HistoryDetail() {
           )}
 
           {record.result.report_file && (
-            <div className="text-xs text-gray-500 mt-4">
-              已產生編譯報告 <code className="text-gray-400">{record.result.report_file}</code>(已包含在下載檔內)
+            <div className="text-xs mt-4" style={{ color: 'var(--ink-faint)' }}>
+              A build report was generated:{' '}
+              <code style={{ color: 'var(--ink-muted)' }}>{record.result.report_file}</code> (included
+              in the download).
             </div>
           )}
         </div>
       )}
 
-      {/* Full build log (when still available in memory) */}
+      {/* Full build log (when still available in memory) — the focus. */}
       {logs.length > 0 && (
         <div className="mb-6">
-          <LogViewer logs={logs} title="建置日誌" height={360} />
+          <LogViewer logs={logs} title="Build log" height={360} />
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel - Overview */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Status Card */}
-          <div className="glass-card p-5">
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4"
-              style={{ backgroundColor: status.bgColor, color: status.color }}
-            >
-              {status.icon}
-              <span className="text-sm font-medium uppercase">{record.status}</span>
+      {/* Run details + build configuration (secondary panel) */}
+      <div className="glass-card p-5">
+        {/* Run details */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 text-sm mb-5">
+          <div>
+            <div className="text-xs mb-0.5" style={{ color: 'var(--ink-faint)' }}>
+              Started
             </div>
-
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">使用者</span>
-                <span className="text-gray-300">{record.user_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">開始時間</span>
-                <span className="text-gray-300 text-xs">{new Date(record.start_time).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">結束時間</span>
-                <span className="text-gray-300 text-xs">
-                  {record.end_time ? new Date(record.end_time).toLocaleString() : '-'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">耗時</span>
-                <span className="text-cyber-400 font-mono text-xs">
-                  {formatDuration(record.start_time, record.end_time)}
-                </span>
-              </div>
-              {record.output_dir && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">輸出路徑</span>
-                  <Tooltip title={record.output_dir}>
-                    <span
-                      className="text-gray-300 font-mono text-xs truncate max-w-[160px] cursor-pointer"
-                      onClick={() => copyToClipboard(record.output_dir)}
-                    >
-                      {record.output_dir}
-                    </span>
-                  </Tooltip>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-6 space-y-2">
-              {config && (
-                <Button
-                  icon={<RedoOutlined />}
-                  onClick={() =>
-                    navigate('/create', {
-                      state: {
-                        rebuild: true,
-                        projectName: record.project_name,
-                        config: record.config,
-                      },
-                    })
-                  }
-                  className="w-full"
-                  style={{
-                    background: 'rgba(76, 141, 240, 0.1)',
-                    borderColor: 'rgba(76, 141, 240, 0.3)',
-                    color: '#6ba6f7',
-                  }}
-                >
-                  重新打包
-                </Button>
-              )}
-              {record.status === 'completed' && (
-                <Button
-                  icon={<DownloadOutlined />}
-                  loading={downloading}
-                  onClick={async () => {
-                    setDownloading(true)
-                    try {
-                      triggerUrlDownload(await taskApi.getOutputDownloadUrl(record.task_id))
-                      message.success('已開始下載輸出')
-                    } catch (err: unknown) {
-                      message.error(getErrorDetail(err, '下載輸出失敗'))
-                    } finally {
-                      setDownloading(false)
-                    }
-                  }}
-                  className="w-full"
-                  style={{
-                    background: 'rgba(34, 197, 94, 0.1)',
-                    borderColor: 'rgba(34, 197, 94, 0.3)',
-                    color: '#56d6a1',
-                  }}
-                >
-                  下載輸出
-                </Button>
-              )}
-              {config?.source_type === 'git'
-                && record.status !== 'running'
-                && record.status !== 'pending' && (
-                <Button
-                  icon={<DeleteOutlined />}
-                  loading={deletingWorkspace}
-                  onClick={handleDeleteWorkspace}
-                  className="w-full"
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    borderColor: 'rgba(239, 68, 68, 0.3)',
-                    color: '#f27d7d',
-                  }}
-                >
-                  刪除工作區
-                </Button>
-              )}
+            <div style={{ color: 'var(--ink)' }}>
+              {new Date(record.start_time).toLocaleString()}
             </div>
           </div>
+          <div>
+            <div className="text-xs mb-0.5" style={{ color: 'var(--ink-faint)' }}>
+              Finished
+            </div>
+            <div style={{ color: 'var(--ink)' }}>
+              {record.end_time ? new Date(record.end_time).toLocaleString() : '-'}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs mb-0.5" style={{ color: 'var(--ink-faint)' }}>
+              Duration
+            </div>
+            <div className="font-mono text-cyber-400">
+              {formatDuration(record.start_time, record.end_time)}
+            </div>
+          </div>
+          {record.output_dir && (
+            <div className="min-w-0">
+              <div className="text-xs mb-0.5" style={{ color: 'var(--ink-faint)' }}>
+                Output path
+              </div>
+              <Tooltip title={record.output_dir}>
+                <div
+                  className="font-mono text-xs truncate cursor-pointer"
+                  style={{ color: 'var(--ink)' }}
+                  onClick={() => copyToClipboard(record.output_dir)}
+                >
+                  {record.output_dir}
+                </div>
+              </Tooltip>
+            </div>
+          )}
         </div>
 
-        {/* Right Panel - Build Configuration Details */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Project Type & Docker */}
-          <div className="glass-card p-5">
-            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">
-              建置設定
-            </h3>
+        <div className="border-t pt-5" style={{ borderColor: 'var(--seam)' }}>
+          <h3
+            className="text-sm font-medium uppercase tracking-wider mb-4"
+            style={{ color: 'var(--ink-muted)' }}
+          >
+            Build configuration
+          </h3>
 
-            {config ? (
-              <div className="space-y-4">
-                {/* Type Tags */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  {projectType && (
-                    <Tag icon={projectType.icon} color={projectType.color} style={{ fontSize: 14, padding: '2px 10px' }}>
-                      {projectType.label}
-                    </Tag>
-                  )}
-                  {config.docker_enabled && (
-                    <Tag icon={<DockerOutlined />} color="#2496ED" style={{ fontSize: 14, padding: '2px 10px' }}>
-                      Docker
-                    </Tag>
-                  )}
-                  <Tag color={config.pack_mode === 'full' ? 'orange' : 'cyan'} style={{ fontSize: 14, padding: '2px 10px' }}>
-                    Pack: {config.pack_mode === 'full' ? 'Full' : 'External'}
+          {config ? (
+            <div className="space-y-4">
+              {/* Type Tags */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {projectType && (
+                  <Tag icon={projectType.icon} color={projectType.color} style={{ fontSize: 14, padding: '2px 10px' }}>
+                    {projectType.label}
                   </Tag>
-                  {config.onefile && (
-                    <Tag color="default" style={{ fontSize: 14, padding: '2px 10px' }}>單檔執行檔</Tag>
-                  )}
-                </div>
-
-                {/* Common Settings */}
-                <Descriptions
-                  column={2}
-                  size="small"
-                  labelStyle={{ color: '#6b7280', fontSize: 13 }}
-                  contentStyle={{ color: '#d1d5db', fontSize: 13 }}
-                >
-                  {config.source_type === 'git' ? (
-                    <>
-                      <Descriptions.Item label="來源" span={2}>
-                        <span style={{ color: '#9cc4fb' }}>Git URL</span>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Git 網址" span={2}>
-                        <code style={{ fontSize: 12, color: '#93c5fd' }}>{config.git_url}</code>
-                      </Descriptions.Item>
-                      <Descriptions.Item
-                        label={config.git_ref_type === 'tag' ? '標籤' : '分支'}
-                        span={2}
-                      >
-                        <code style={{ fontSize: 12 }}>{config.git_ref}</code>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="工作區" span={2}>
-                        <code style={{ fontSize: 11, color: '#6b7280' }}>
-                          {workspaceDir}/{record.task_id}
-                        </code>
-                      </Descriptions.Item>
-                    </>
-                  ) : (
-                    <Descriptions.Item label="專案路徑" span={2}>
-                      <code style={{ fontSize: 12, color: '#93c5fd' }}>{config.project_path}</code>
-                    </Descriptions.Item>
-                  )}
-                  <Descriptions.Item label="輸出目錄">
-                    <code style={{ fontSize: 12 }}>{config.output_dir}</code>
-                  </Descriptions.Item>
-                </Descriptions>
-
-                {/* Backend Settings */}
-                {(config.project_type === 'backend_only' || config.project_type === 'fullstack') && (
-                  <>
-                    <div className="border-t border-white/5 pt-3">
-                      <h4 className="text-xs font-medium text-cyber-500 uppercase tracking-wider mb-3">
-                        <CloudServerOutlined className="mr-1" /> Backend
-                      </h4>
-                      <Descriptions
-                        column={2}
-                        size="small"
-                        labelStyle={{ color: '#6b7280', fontSize: 13 }}
-                        contentStyle={{ color: '#d1d5db', fontSize: 13 }}
-                      >
-                        <Descriptions.Item label="Python 版本">v{config.python_version}</Descriptions.Item>
-                        <Descriptions.Item label="進入點">
-                          <code style={{ fontSize: 12 }}>{config.entry_point}</code>
-                        </Descriptions.Item>
-                        {config.output_name && (
-                          <Descriptions.Item label="二進位執行檔">
-                            <code style={{ fontSize: 12 }}>{config.output_name}</code>
-                          </Descriptions.Item>
-                        )}
-                        <Descriptions.Item label="CPU 並行數">
-                          {config.nuitka_jobs > 0 ? `${config.nuitka_jobs} 核` : '自動'}
-                        </Descriptions.Item>
-                        {config.include_packages && (
-                          <Descriptions.Item label="強制納入套件" span={2}>
-                            <code style={{ fontSize: 12 }}>{config.include_packages}</code>
-                          </Descriptions.Item>
-                        )}
-                        {config.extra_dirs && (
-                          <Descriptions.Item label="打包的 source code" span={2}>
-                            <code style={{ fontSize: 12 }}>{config.extra_dirs}</code>
-                          </Descriptions.Item>
-                        )}
-                        {config.data_dirs && (
-                          <Descriptions.Item label="資料目錄" span={2}>
-                            <code style={{ fontSize: 12 }}>{config.data_dirs}</code>
-                          </Descriptions.Item>
-                        )}
-                      </Descriptions>
-                    </div>
-                  </>
                 )}
-
-                {/* Frontend Settings */}
-                {(config.project_type === 'frontend_only' || config.project_type === 'fullstack') && (
-                  <div className="border-t border-white/5 pt-3">
-                    <h4 className="text-xs font-medium text-matrix-500 uppercase tracking-wider mb-3">
-                      <DesktopOutlined className="mr-1" /> Frontend
-                    </h4>
-                    <Descriptions
-                      column={2}
-                      size="small"
-                      labelStyle={{ color: '#6b7280', fontSize: 13 }}
-                      contentStyle={{ color: '#d1d5db', fontSize: 13 }}
-                    >
-                      <Descriptions.Item label="前端目錄">
-                        <code style={{ fontSize: 12 }}>{config.frontend_dir}</code>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="建置工具">{config.frontend_build_tool}</Descriptions.Item>
-                      <Descriptions.Item label="建置指令">
-                        <code style={{ fontSize: 12 }}>{config.frontend_build_command}</code>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="輸出目錄">
-                        <code style={{ fontSize: 12 }}>{config.frontend_output_dir}</code>
-                      </Descriptions.Item>
-                      {config.frontend_env_content && (
-                        <Descriptions.Item label="Env 檔">
-                          <code style={{ fontSize: 12 }}>{config.frontend_env_filename}</code>
-                        </Descriptions.Item>
-                      )}
-                    </Descriptions>
-                    {config.frontend_env_content && (
-                      <div className="mt-3">
-                        <span className="text-xs text-gray-500">Frontend Build Env:</span>
-                        <pre
-                          className="mt-1 p-3 rounded-lg text-xs text-gray-300 overflow-auto max-h-40"
-                          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}
-                        >
-                          {config.frontend_env_content}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Docker Settings */}
                 {config.docker_enabled && (
-                  <div className="border-t border-white/5 pt-3">
-                    <h4 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: '#2496ED' }}>
-                      <DockerOutlined className="mr-1" /> Docker
-                    </h4>
-                    <Descriptions
-                      column={2}
-                      size="small"
-                      labelStyle={{ color: '#6b7280', fontSize: 13 }}
-                      contentStyle={{ color: '#d1d5db', fontSize: 13 }}
-                    >
-                      {config.docker_image_name && (
-                        <Descriptions.Item label="Image 名稱">
-                          <code style={{ fontSize: 12 }}>{config.docker_image_name}</code>
-                        </Descriptions.Item>
-                      )}
-                      <Descriptions.Item label="基底 Image">
-                        <code style={{ fontSize: 12 }}>{config.docker_base_image}</code>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="對外連接埠">{config.docker_expose_port}</Descriptions.Item>
-                      {config.docker_install_node && (
-                        <Descriptions.Item label="Node.js">已安裝</Descriptions.Item>
-                      )}
-                      {config.docker_api_proxy && (
-                        <Descriptions.Item label="API Proxy" span={2}>
-                          <code style={{ fontSize: 12 }}>{config.docker_api_proxy}</code>
-                        </Descriptions.Item>
-                      )}
-                    </Descriptions>
-                    {config.docker_env_vars && (
-                      <div className="mt-3">
-                        <span className="text-xs text-gray-500">Docker ENV (Runtime):</span>
-                        <pre
-                          className="mt-1 p-3 rounded-lg text-xs text-gray-300 overflow-auto max-h-40"
-                          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}
-                        >
-                          {config.docker_env_vars}
-                        </pre>
-                      </div>
-                    )}
-                    {config.docker_custom_commands && (
-                      <div className="mt-3">
-                        <span className="text-xs text-gray-500">Custom Commands:</span>
-                        <pre
-                          className="mt-1 p-3 rounded-lg text-xs text-gray-300 overflow-auto max-h-40"
-                          style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}
-                        >
-                          {config.docker_custom_commands}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
+                  <Tag icon={<DockerOutlined />} color="#2496ED" style={{ fontSize: 14, padding: '2px 10px' }}>
+                    Docker
+                  </Tag>
+                )}
+                <Tag color={config.pack_mode === 'full' ? 'orange' : 'cyan'} style={{ fontSize: 14, padding: '2px 10px' }}>
+                  Pack: {config.pack_mode === 'full' ? 'Full' : 'External'}
+                </Tag>
+                {config.onefile && (
+                  <Tag color="default" style={{ fontSize: 14, padding: '2px 10px' }}>
+                    One-file
+                  </Tag>
                 )}
               </div>
-            ) : (
-              <p className="text-gray-500 text-sm">No configuration data available for this build.</p>
-            )}
-          </div>
+
+              {/* Common Settings */}
+              <Descriptions
+                column={2}
+                size="small"
+                labelStyle={{ color: 'var(--ink-faint)', fontSize: 13 }}
+                contentStyle={{ color: 'var(--ink)', fontSize: 13 }}
+              >
+                {config.source_type === 'git' ? (
+                  <>
+                    <Descriptions.Item label="Source" span={2}>
+                      <span className="text-cyber-300">Git URL</span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Git URL" span={2}>
+                      <code style={{ fontSize: 12 }} className="text-cyber-300">{config.git_url}</code>
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={config.git_ref_type === 'tag' ? 'Tag' : 'Branch'}
+                      span={2}
+                    >
+                      <code style={{ fontSize: 12 }}>{config.git_ref}</code>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Workspace" span={2}>
+                      <code style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
+                        {workspaceDir}/{record.task_id}
+                      </code>
+                    </Descriptions.Item>
+                  </>
+                ) : (
+                  <Descriptions.Item label="Project path" span={2}>
+                    <code style={{ fontSize: 12 }} className="text-cyber-300">{config.project_path}</code>
+                  </Descriptions.Item>
+                )}
+                <Descriptions.Item label="Output dir">
+                  <code style={{ fontSize: 12 }}>{config.output_dir}</code>
+                </Descriptions.Item>
+              </Descriptions>
+
+              {/* Backend Settings */}
+              {(config.project_type === 'backend_only' || config.project_type === 'fullstack') && (
+                <div className="border-t pt-3" style={{ borderColor: 'var(--seam)' }}>
+                  <h4 className="text-xs font-medium text-cyber-500 uppercase tracking-wider mb-3">
+                    <CloudServerOutlined className="mr-1" /> Backend
+                  </h4>
+                  <Descriptions
+                    column={2}
+                    size="small"
+                    labelStyle={{ color: 'var(--ink-faint)', fontSize: 13 }}
+                    contentStyle={{ color: 'var(--ink)', fontSize: 13 }}
+                  >
+                    <Descriptions.Item label="Python version">v{config.python_version}</Descriptions.Item>
+                    <Descriptions.Item label="Entry point">
+                      <code style={{ fontSize: 12 }}>{config.entry_point}</code>
+                    </Descriptions.Item>
+                    {config.output_name && (
+                      <Descriptions.Item label="Binary name">
+                        <code style={{ fontSize: 12 }}>{config.output_name}</code>
+                      </Descriptions.Item>
+                    )}
+                    <Descriptions.Item label="CPU jobs">
+                      {config.nuitka_jobs > 0 ? `${config.nuitka_jobs} cores` : 'Auto'}
+                    </Descriptions.Item>
+                    {config.include_packages && (
+                      <Descriptions.Item label="Included packages" span={2}>
+                        <code style={{ fontSize: 12 }}>{config.include_packages}</code>
+                      </Descriptions.Item>
+                    )}
+                    {config.extra_dirs && (
+                      <Descriptions.Item label="Bundled source" span={2}>
+                        <code style={{ fontSize: 12 }}>{config.extra_dirs}</code>
+                      </Descriptions.Item>
+                    )}
+                    {config.data_dirs && (
+                      <Descriptions.Item label="Data dirs" span={2}>
+                        <code style={{ fontSize: 12 }}>{config.data_dirs}</code>
+                      </Descriptions.Item>
+                    )}
+                  </Descriptions>
+                </div>
+              )}
+
+              {/* Frontend Settings */}
+              {(config.project_type === 'frontend_only' || config.project_type === 'fullstack') && (
+                <div className="border-t pt-3" style={{ borderColor: 'var(--seam)' }}>
+                  <h4 className="text-xs font-medium text-matrix-500 uppercase tracking-wider mb-3">
+                    <DesktopOutlined className="mr-1" /> Frontend
+                  </h4>
+                  <Descriptions
+                    column={2}
+                    size="small"
+                    labelStyle={{ color: 'var(--ink-faint)', fontSize: 13 }}
+                    contentStyle={{ color: 'var(--ink)', fontSize: 13 }}
+                  >
+                    <Descriptions.Item label="Frontend dir">
+                      <code style={{ fontSize: 12 }}>{config.frontend_dir}</code>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Build tool">{config.frontend_build_tool}</Descriptions.Item>
+                    <Descriptions.Item label="Build command">
+                      <code style={{ fontSize: 12 }}>{config.frontend_build_command}</code>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Output dir">
+                      <code style={{ fontSize: 12 }}>{config.frontend_output_dir}</code>
+                    </Descriptions.Item>
+                    {config.frontend_env_content && (
+                      <Descriptions.Item label="Env file">
+                        <code style={{ fontSize: 12 }}>{config.frontend_env_filename}</code>
+                      </Descriptions.Item>
+                    )}
+                  </Descriptions>
+                  {config.frontend_env_content && (
+                    <div className="mt-3">
+                      <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                        Frontend build env
+                      </span>
+                      <pre
+                        className="mt-1 p-3 rounded-lg text-xs overflow-auto max-h-40 bg-void-950"
+                        style={{ color: 'var(--ink-muted)', border: '1px solid var(--seam)' }}
+                      >
+                        {config.frontend_env_content}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Docker Settings */}
+              {config.docker_enabled && (
+                <div className="border-t pt-3" style={{ borderColor: 'var(--seam)' }}>
+                  <h4
+                    className="text-xs font-medium uppercase tracking-wider mb-3"
+                    style={{ color: 'var(--color-cyber-500)' }}
+                  >
+                    <DockerOutlined className="mr-1" /> Docker
+                  </h4>
+                  <Descriptions
+                    column={2}
+                    size="small"
+                    labelStyle={{ color: 'var(--ink-faint)', fontSize: 13 }}
+                    contentStyle={{ color: 'var(--ink)', fontSize: 13 }}
+                  >
+                    {config.docker_image_name && (
+                      <Descriptions.Item label="Image name">
+                        <code style={{ fontSize: 12 }}>{config.docker_image_name}</code>
+                      </Descriptions.Item>
+                    )}
+                    <Descriptions.Item label="Base image">
+                      <code style={{ fontSize: 12 }}>{config.docker_base_image}</code>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Exposed port">{config.docker_expose_port}</Descriptions.Item>
+                    {config.docker_install_node && (
+                      <Descriptions.Item label="Node.js">Installed</Descriptions.Item>
+                    )}
+                    {config.docker_api_proxy && (
+                      <Descriptions.Item label="API proxy" span={2}>
+                        <code style={{ fontSize: 12 }}>{config.docker_api_proxy}</code>
+                      </Descriptions.Item>
+                    )}
+                  </Descriptions>
+                  {config.docker_env_vars && (
+                    <div className="mt-3">
+                      <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                        Docker runtime env
+                      </span>
+                      <pre
+                        className="mt-1 p-3 rounded-lg text-xs overflow-auto max-h-40 bg-void-950"
+                        style={{ color: 'var(--ink-muted)', border: '1px solid var(--seam)' }}
+                      >
+                        {config.docker_env_vars}
+                      </pre>
+                    </div>
+                  )}
+                  {config.docker_custom_commands && (
+                    <div className="mt-3">
+                      <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                        Custom commands
+                      </span>
+                      <pre
+                        className="mt-1 p-3 rounded-lg text-xs overflow-auto max-h-40 bg-void-950"
+                        style={{ color: 'var(--ink-muted)', border: '1px solid var(--seam)' }}
+                      >
+                        {config.docker_custom_commands}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>
+              No configuration data available for this build.
+            </p>
+          )}
         </div>
       </div>
     </div>

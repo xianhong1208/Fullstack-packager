@@ -22,9 +22,9 @@ import { getErrorDetail } from '../utils/errors'
 const { Title } = Typography
 
 const projectTypeConfig: Record<ProjectType, { label: string; color: string; icon: React.ReactNode }> = {
-  backend_only: { label: '後端', color: 'blue', icon: <CloudServerOutlined /> },
-  frontend_only: { label: '前端', color: 'green', icon: <DesktopOutlined /> },
-  fullstack: { label: '全端', color: 'purple', icon: <AppstoreOutlined /> },
+  backend_only: { label: 'Backend', color: 'blue', icon: <CloudServerOutlined /> },
+  frontend_only: { label: 'Frontend', color: 'green', icon: <DesktopOutlined /> },
+  fullstack: { label: 'Full stack', color: 'purple', icon: <AppstoreOutlined /> },
 }
 
 export default function History() {
@@ -53,9 +53,9 @@ export default function History() {
     try {
       const blob = await taskApi.exportHistory(userFilter)
       triggerDownload(blob, userFilter ? `history-${userFilter}.csv` : 'history.csv')
-      message.success('已匯出歷史紀錄 CSV')
+      message.success('History exported as CSV')
     } catch (err) {
-      message.error(getErrorDetail(err, '匯出歷史紀錄失敗'))
+      message.error(getErrorDetail(err, 'Could not export history'))
     }
   }
 
@@ -74,9 +74,9 @@ export default function History() {
     setDownloadingId(record.task_id)
     try {
       triggerUrlDownload(await taskApi.getOutputDownloadUrl(record.task_id))
-      message.success('已開始下載產出')
+      message.success('Download started')
     } catch (err: unknown) {
-      message.error(getErrorDetail(err, '下載產出失敗'))
+      message.error(getErrorDetail(err, 'Could not download the output'))
     } finally {
       setDownloadingId(null)
     }
@@ -88,13 +88,13 @@ export default function History() {
   // Relative time in the GitHub Actions register ("3 minutes ago").
   const timeAgo = (iso: string): string => {
     const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
-    if (s < 60) return '剛剛'
+    if (s < 60) return 'just now'
     const m = Math.floor(s / 60)
-    if (m < 60) return `${m} 分鐘前`
+    if (m < 60) return `${m} min ago`
     const h = Math.floor(m / 60)
-    if (h < 24) return `${h} 小時前`
+    if (h < 24) return `${h} h ago`
     const d = Math.floor(h / 24)
-    if (d < 30) return `${d} 天前`
+    if (d < 30) return `${d} d ago`
     return new Date(iso).toLocaleDateString()
   }
 
@@ -129,16 +129,16 @@ export default function History() {
         )
       },
       filters: [
-        { text: '執行中', value: 'running' },
-        { text: '已完成', value: 'completed' },
-        { text: '失敗', value: 'failed' },
-        { text: '已取消', value: 'cancelled' },
+        { text: 'Running', value: 'running' },
+        { text: 'Passed', value: 'completed' },
+        { text: 'Failed', value: 'failed' },
+        { text: 'Cancelled', value: 'cancelled' },
       ],
       onFilter: (value, record) => record.status === value,
     },
     {
       // Run identity: project name + a muted meta line (type / docker / who ran it).
-      title: '打包任務',
+      title: 'Build',
       key: 'run',
       render: (_, record) => {
         const type = record.config?.project_type
@@ -158,8 +158,8 @@ export default function History() {
             <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: 'var(--ink-faint)' }}>
               {cfg && <span style={{ color: cfg.color }}>{cfg.label}</span>}
               {record.config?.docker_enabled && (
-                <Tooltip title={record.config.docker_image_name || '已啟用 Docker'}>
-                  <DockerOutlined style={{ color: '#4c8df0' }} aria-label="已啟用 Docker" />
+                <Tooltip title={record.config.docker_image_name || 'Docker enabled'}>
+                  <DockerOutlined style={{ color: '#4c8df0' }} aria-label="Docker enabled" />
                 </Tooltip>
               )}
               <span aria-hidden>·</span>
@@ -169,14 +169,14 @@ export default function History() {
         )
       },
       filters: [
-        { text: '後端', value: 'backend_only' },
-        { text: '前端', value: 'frontend_only' },
-        { text: '全端', value: 'fullstack' },
+        { text: 'Backend', value: 'backend_only' },
+        { text: 'Frontend', value: 'frontend_only' },
+        { text: 'Full stack', value: 'fullstack' },
       ],
       onFilter: (value, record) => record.config?.project_type === value,
     },
     {
-      title: '開始',
+      title: 'Started',
       dataIndex: 'start_time',
       key: 'start_time',
       width: 130,
@@ -189,7 +189,7 @@ export default function History() {
       defaultSortOrder: 'descend',
     },
     {
-      title: '耗時',
+      title: 'Duration',
       key: 'duration',
       width: 100,
       render: (_, record) => (
@@ -219,14 +219,14 @@ export default function History() {
                 handleRebuild(record)
               }}
             >
-              重建
+              Rebuild
             </Button>
           )}
           {canDownload(record) && (
-            <Tooltip title="下載產出">
+            <Tooltip title="Download output">
               <Button
                 size="small"
-                aria-label="下載產出"
+                aria-label="Download output"
                 icon={<DownloadOutlined />}
                 loading={downloadingId === record.task_id}
                 onClick={(e) => {
@@ -251,14 +251,14 @@ export default function History() {
         }}
       >
         <Title level={3} style={{ margin: 0 }}>
-          建置歷史
+          Builds
         </Title>
         <Space>
           {canFilterByUser && (
             <Select
               allowClear
               showSearch
-              placeholder="篩選使用者"
+              placeholder="Filter by user"
               style={{ width: 220 }}
               value={userFilter}
               onChange={(v) => setUserFilter(v)}
@@ -273,7 +273,7 @@ export default function History() {
             icon={<DownloadOutlined />}
             onClick={handleExport}
           >
-            匯出 CSV
+            Export CSV
           </Button>
         </Space>
       </Space>
@@ -286,11 +286,11 @@ export default function History() {
         locale={{
           emptyText: (
             <Empty
-              description={<span className="text-gray-400">尚無建置紀錄</span>}
+              description={<span style={{ color: 'var(--ink-muted)' }}>No builds yet</span>}
               style={{ padding: 32 }}
             >
               <Button type="primary" icon={<RocketOutlined />} onClick={() => navigate('/create')}>
-                建立第一個任務
+                Start your first build
               </Button>
             </Empty>
           ),
@@ -298,7 +298,7 @@ export default function History() {
         pagination={{
           pageSize: 20,
           showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 筆紀錄`,
+          showTotal: (total) => `${total} builds`,
         }}
         scroll={{ x: 1100 }}
         onRow={(record) => ({

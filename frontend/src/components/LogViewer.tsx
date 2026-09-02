@@ -108,9 +108,9 @@ export default function LogViewer({
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(logs.join('\n'))
-      message.success('已複製全部日誌')
+      message.success('Copied all logs')
     } catch {
-      message.error('複製失敗')
+      message.error('Copy failed')
     }
   }, [logs])
 
@@ -119,7 +119,7 @@ export default function LogViewer({
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    const safeTitle = title.replace(/[^\w一-龥-]+/g, '_')
+    const safeTitle = title.replace(/[^\w-]+/g, '_')
     a.download = `${safeTitle || 'logs'}.txt`
     document.body.appendChild(a)
     a.click()
@@ -136,32 +136,32 @@ export default function LogViewer({
           <Input.Search
             allowClear
             size="small"
-            placeholder="搜尋日誌"
+            placeholder="Search logs"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: 180 }}
           />
-          <Tooltip title={paused ? '恢復自動捲動' : '暫停自動捲動'}>
+          <Tooltip title={paused ? 'Resume auto-scroll' : 'Pause auto-scroll'}>
             <Button
               size="small"
               type={paused ? 'default' : 'primary'}
-              aria-label={paused ? '恢復自動捲動' : '暫停自動捲動'}
+              aria-label={paused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
               icon={paused ? <VerticalAlignBottomOutlined /> : <PauseOutlined />}
               onClick={() => (paused ? scrollToBottom() : setPaused(true))}
             />
           </Tooltip>
-          <Tooltip title="複製全部">
+          <Tooltip title="Copy all">
             <Button
               size="small"
-              aria-label="複製全部日誌"
+              aria-label="Copy all logs"
               icon={<CopyOutlined />}
               onClick={handleCopy}
             />
           </Tooltip>
-          <Tooltip title="下載日誌">
+          <Tooltip title="Download logs">
             <Button
               size="small"
-              aria-label="下載日誌檔案"
+              aria-label="Download log file"
               icon={<DownloadOutlined />}
               onClick={handleDownload}
             />
@@ -173,7 +173,7 @@ export default function LogViewer({
           padding: 0,
           height: height,
           overflow: 'hidden',
-          background: '#1e1e1e',
+          background: '#0b0f14',
         },
       }}
     >
@@ -185,7 +185,7 @@ export default function LogViewer({
       >
         {displayLogs.length === 0 ? (
           <Empty
-            description={search.trim() ? '沒有符合的日誌' : '尚無日誌'}
+            description={search.trim() ? 'No matching logs' : 'No logs yet'}
             style={{ padding: 40, color: '#666' }}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
@@ -238,19 +238,19 @@ function getLogColor(log: string): string {
     /(^|\W)(ERROR|Error:|failed|Failed|FAILED)(\W|$)/.test(log) ||
     log.includes('✗')
   ) {
-    return '#f5222d'
+    return '#f27d7d' // alert / coral
   }
   if (/(^|\W)(WARN|WARNING|Warning)(\W|:|$)/.test(log) || log.includes('⚠')) {
-    return '#faad14'
+    return '#f0bd5e' // signal / amber
   }
   if (
     /(^|\W)(SUCCESS|COMPLETED?|Complete[d]?)(\W|$)/.test(log) ||
     log.includes('✓')
   ) {
-    return '#52c41a'
+    return '#56d6a1' // matrix / mint
   }
   if (/^\[[^\]]+\]/.test(log)) {
-    return '#1890ff'
+    return '#6ba6f7' // cyber / cobalt
   }
-  return '#d4d4d4'
+  return '#c9d1d9'
 }

@@ -35,12 +35,12 @@ function Stat({
   color?: string
 }) {
   const body = (
-    <div className="glass-card p-4" style={{ minWidth: 0 }}>
-      <div className="text-xs text-gray-500 uppercase tracking-wider truncate">{label}</div>
+    <div className="stat-card" style={{ minWidth: 0 }}>
+      <div className="text-xs uppercase tracking-wider truncate" style={{ color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{label}</div>
       <div className="text-2xl font-semibold mt-1" style={{ color, fontFamily: 'var(--font-display)' }}>
         {value}
       </div>
-      {hint && <div className="text-xs text-gray-500 mt-1 truncate">{hint}</div>}
+      {hint && <div className="text-xs mt-1 truncate" style={{ color: 'var(--ink-faint)' }}>{hint}</div>}
     </div>
   )
   return hint ? <Tooltip title={hint}>{body}</Tooltip> : body
@@ -62,7 +62,7 @@ function Sparkline({ points }: { points: { day: string; rate: number }[] }) {
     return points.map((p, i) => `${i * step},${H - (p.rate / 100) * H}`).join(' ')
   }, [points])
 
-  if (!path) return <div className="text-xs text-gray-600">資料點不足</div>
+  if (!path) return <div className="text-xs" style={{ color: 'var(--ink-faint)' }}>Not enough data</div>
 
   const last = points[points.length - 1]
   return (
@@ -85,22 +85,22 @@ const STATUS_COLOR: Record<string, string> = {
   pending: '#64748b',
 }
 const STATUS_LABEL: Record<string, string> = {
-  completed: '成功',
-  failed: '失敗',
-  cancelled: '已取消',
-  running: '進行中',
-  pending: '排隊中',
+  completed: 'Passed',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+  running: 'Running',
+  pending: 'Queued',
 }
 
 function relativeTime(iso: string | null): string {
   if (!iso) return '—'
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.floor(diff / 60000)
-  if (m < 1) return '剛剛'
-  if (m < 60) return `${m} 分鐘前`
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h} 小時前`
-  return `${Math.floor(h / 24)} 天前`
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
 }
 
 /** Last N outcomes as a strip, newest on the left.
@@ -111,7 +111,7 @@ function RunStrip({ recent }: { recent: string[] }) {
   return (
     <div className="flex gap-1 items-center">
       {recent.map((s, i) => (
-        <Tooltip key={i} title={`${i === 0 ? '最近一次' : `${i} 次前`}：${STATUS_LABEL[s] ?? s}`}>
+        <Tooltip key={i} title={`${i === 0 ? 'Latest' : `${i} runs ago`}: ${STATUS_LABEL[s] ?? s}`}>
           <span
             style={{
               width: 8,
@@ -153,13 +153,13 @@ export default function BuildStatsPanel({ stats }: { stats: BuildStats }) {
           <div className="flex items-center gap-2 mb-1">
             <WarningOutlined style={{ color: '#f27d7d' }} />
             <span className="text-sm font-medium text-alert-400">
-              編譯環境降級：Python {environment.degraded.join('、')} 無法使用
+              Build environment degraded: Python {environment.degraded.join(', ')} is unavailable
             </span>
           </div>
-          <div className="text-xs text-gray-400">
-            這些版本的 venv 直譯器連結已失效，選用時會**靜默退回**服務自己的 Python{' '}
-            {environment.service_python}，產出將在執行期出現 ModuleNotFoundError。
-            請在伺服器上執行 <code className="text-cyber-300">bash scripts/setup_nuitka_venvs.sh</code> 重建。
+          <div className="text-xs" style={{ color: 'var(--ink-muted)' }}>
+            The venv interpreter links for these versions no longer resolve. Selecting one silently falls back to the
+            service&apos;s own Python {environment.service_python}, and the output will fail with ModuleNotFoundError at
+            runtime. Run <code className="text-cyber-300">bash scripts/setup_nuitka_venvs.sh</code> on the server to rebuild them.
           </div>
           {environment.targets
             .filter((t) => !t.usable && t.target)
@@ -173,24 +173,24 @@ export default function BuildStatsPanel({ stats }: { stats: BuildStats }) {
 
       <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         <Stat
-          label={`成功率 / ${stats.window_days} 天`}
+          label={`Success rate / ${stats.window_days}d`}
           value={summary.success_rate === null ? '—' : `${summary.success_rate}%`}
           color={rateColor(summary.success_rate)}
-          hint={`${summary.completed} 成功 / ${summary.failed} 失敗 / ${summary.cancelled} 取消`}
+          hint={`${summary.completed} passed / ${summary.failed} failed / ${summary.cancelled} cancelled`}
         />
-        <Stat label="建置次數" value={String(summary.total)} />
-        <Stat label="平均耗時" value={formatDuration(summary.avg_duration_seconds)} hint="僅計成功的建置" />
+        <Stat label="Total builds" value={String(summary.total)} />
+        <Stat label="Avg duration" value={formatDuration(summary.avg_duration_seconds)} hint="Successful builds only" />
         <Stat
-          label="診斷覆蓋率"
+          label="Diagnosis coverage"
           value={stats.diagnosis_coverage === null ? '—' : `${stats.diagnosis_coverage}%`}
           color={rateColor(stats.diagnosis_coverage)}
-          hint="失敗中有自動診斷的比例。偏低代表使用者只能盲目重試"
+          hint="Share of failures with an automatic diagnosis. Low means users can only retry blind."
         />
       </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         <div className="glass-card p-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">每日成功率</div>
+          <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Daily success rate</div>
           <Sparkline points={sparkPoints} />
           <div className="flex justify-between text-xs text-gray-600 mt-1">
             <span>{sparkPoints[0]?.day ?? ''}</span>
@@ -199,9 +199,9 @@ export default function BuildStatsPanel({ stats }: { stats: BuildStats }) {
         </div>
 
         <div className="glass-card p-4">
-          <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">失敗原因</div>
+          <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Top failures</div>
           {top_failures.length === 0 ? (
-            <div className="text-xs text-gray-600">沒有帶診斷的失敗紀錄</div>
+            <div className="text-xs text-gray-600">No diagnosed failures</div>
           ) : (
             <div className="space-y-1.5">
               {top_failures.slice(0, 5).map((f) => (
@@ -222,9 +222,9 @@ export default function BuildStatsPanel({ stats }: { stats: BuildStats }) {
         <div className="glass-card p-4 mt-4">
           <div className="flex items-baseline justify-between mb-3">
             <div className="text-xs text-gray-500 uppercase tracking-wider">
-              專案狀態（近 {stats.window_days} 天）
+              Projects (last {stats.window_days}d)
             </div>
-            <div className="text-xs text-gray-600">最近 12 次結果，新 → 舊</div>
+            <div className="text-xs text-gray-600">Last 12 results, new → old</div>
           </div>
 
           <div style={{ maxHeight: 320, overflowY: 'auto' }}>
@@ -234,7 +234,7 @@ export default function BuildStatsPanel({ stats }: { stats: BuildStats }) {
                 className="flex items-center gap-3 py-2"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
               >
-                <Tooltip title={`最近一次：${STATUS_LABEL[p.last_status] ?? p.last_status}`}>
+                <Tooltip title={`Latest: ${STATUS_LABEL[p.last_status] ?? p.last_status}`}>
                   <span
                     style={{
                       width: 8,

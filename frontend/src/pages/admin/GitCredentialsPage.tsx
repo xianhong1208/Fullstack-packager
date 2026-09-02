@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   App as AntApp,
   Button,
-  Card,
   Empty,
   Form,
   Input,
@@ -15,19 +14,19 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { DeleteOutlined, EditOutlined, KeyOutlined, PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import {
   gitCredentialsApi,
   type GitCredential,
   type GitProvider,
 } from '../../api/gitCredentialsApi'
 
-const { Title, Paragraph, Text } = Typography
+const { Text } = Typography
 
 const PROVIDER_META: Record<GitProvider, { label: string; color: string; defaultHost: string }> = {
   github: { label: 'GitHub', color: 'purple', defaultHost: 'github.com' },
   gitlab: { label: 'GitLab', color: 'orange', defaultHost: 'gitlab.com' },
-  generic: { label: '其他 (自架)', color: 'default', defaultHost: '' },
+  generic: { label: 'Other (self-hosted)', color: 'default', defaultHost: '' },
 }
 
 // Managing Git credentials replaces the old server-side GITLAB_TOKEN env var:
@@ -50,31 +49,31 @@ export default function GitCredentialsPage() {
   const createMutation = useMutation({
     mutationFn: gitCredentialsApi.create,
     onSuccess: () => {
-      message.success('已新增憑證')
+      message.success('Credential added')
       setModalOpen(false)
       invalidate()
     },
-    onError: (e: unknown) => message.error(errorText(e, '新增失敗')),
+    onError: (e: unknown) => message.error(errorText(e, 'Failed to add credential')),
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: { label?: string; token?: string } }) =>
       gitCredentialsApi.update(id, payload),
     onSuccess: () => {
-      message.success('已更新憑證')
+      message.success('Credential updated')
       setModalOpen(false)
       invalidate()
     },
-    onError: (e: unknown) => message.error(errorText(e, '更新失敗')),
+    onError: (e: unknown) => message.error(errorText(e, 'Failed to update credential')),
   })
 
   const deleteMutation = useMutation({
     mutationFn: gitCredentialsApi.remove,
     onSuccess: () => {
-      message.success('已刪除憑證')
+      message.success('Credential deleted')
       invalidate()
     },
-    onError: (e: unknown) => message.error(errorText(e, '刪除失敗')),
+    onError: (e: unknown) => message.error(errorText(e, 'Failed to delete credential')),
   })
 
   const openCreate = () => {
@@ -110,14 +109,14 @@ export default function GitCredentialsPage() {
 
   const columns = [
     {
-      title: '服務',
+      title: 'Provider',
       dataIndex: 'provider',
       key: 'provider',
       render: (p: GitProvider) => <Tag color={PROVIDER_META[p].color}>{PROVIDER_META[p].label}</Tag>,
     },
-    { title: '主機', dataIndex: 'host', key: 'host', render: (h: string) => <Text code>{h}</Text> },
+    { title: 'Host', dataIndex: 'host', key: 'host', render: (h: string) => <Text code>{h}</Text> },
     {
-      title: '標籤',
+      title: 'Label',
       dataIndex: 'label',
       key: 'label',
       render: (l: string | null) => l || <Text type="secondary">—</Text>,
@@ -131,11 +130,11 @@ export default function GitCredentialsPage() {
       ),
     },
     {
-      title: '最後使用',
+      title: 'Last used',
       dataIndex: 'last_used_at',
       key: 'last_used_at',
       render: (v: string | null) =>
-        v ? new Date(v).toLocaleString() : <Text type="secondary">從未</Text>,
+        v ? new Date(v).toLocaleString() : <Text type="secondary">Never</Text>,
     },
     {
       title: '',
@@ -145,11 +144,11 @@ export default function GitCredentialsPage() {
         <Space>
           <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(cred)} />
           <Popconfirm
-            title="刪除這組憑證?"
-            description="使用此主機的私有 repo 打包將無法認證。"
-            okText="刪除"
+            title="Delete this credential?"
+            description="Builds cloning private repos from this host will fail to authenticate."
+            okText="Delete"
             okButtonProps={{ danger: true }}
-            cancelText="取消"
+            cancelText="Cancel"
             onConfirm={() => deleteMutation.mutate(cred.id)}
           >
             <Button size="small" danger icon={<DeleteOutlined />} />
@@ -160,44 +159,52 @@ export default function GitCredentialsPage() {
   ]
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-2">
-        <Title level={3} className="!mb-0">
-          <KeyOutlined className="mr-2" />
-          Git 憑證
-        </Title>
+    <div className="max-w-4xl mx-auto">
+      {/* Page header */}
+      <div
+        className="flex flex-wrap items-start justify-between gap-4 pb-4 mb-6"
+        style={{ borderBottom: '1px solid var(--seam)' }}
+      >
+        <div>
+          <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+            Git credentials
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+            Access tokens used to clone private repositories during a build
+          </p>
+        </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          新增憑證
+          Add credential
         </Button>
       </div>
-      <Paragraph type="secondary">
-        設定用來 clone 私有 repo 的存取權杖(Personal Access Token)。系統依 Git URL 的主機自動選用對應的憑證,
-        支援 GitHub、GitLab 及自架實例。權杖以加密方式儲存,不會再顯示明文。
-      </Paragraph>
 
-      <Card>
-        <Table
-          rowKey="id"
-          loading={isLoading}
-          columns={columns}
-          dataSource={credentials}
-          pagination={false}
-          locale={{ emptyText: <Empty description="尚未設定任何 Git 憑證" /> }}
-        />
-      </Card>
+      <p className="mb-6 text-sm" style={{ color: 'var(--ink-muted)' }}>
+        The matching credential is selected automatically by the host in the Git URL, with support
+        for GitHub, GitLab, and self-hosted instances. Tokens are stored encrypted and are never
+        shown again in plain text.
+      </p>
+
+      <Table
+        rowKey="id"
+        loading={isLoading}
+        columns={columns}
+        dataSource={credentials}
+        pagination={false}
+        locale={{ emptyText: <Empty description="No Git credentials configured yet" /> }}
+      />
 
       <Modal
-        title={editing ? '編輯憑證' : '新增 Git 憑證'}
+        title={editing ? 'Edit credential' : 'Add Git credential'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
         confirmLoading={createMutation.isPending || updateMutation.isPending}
-        okText={editing ? '儲存' : '新增'}
-        cancelText="取消"
+        okText={editing ? 'Save' : 'Add'}
+        cancelText="Cancel"
         destroyOnClose
       >
         <Form form={form} layout="vertical" className="mt-4">
-          <Form.Item name="provider" label="服務" rules={[{ required: true }]}>
+          <Form.Item name="provider" label="Provider" rules={[{ required: true }]}>
             <Select
               disabled={!!editing}
               onChange={(p: GitProvider) => {
@@ -213,32 +220,32 @@ export default function GitCredentialsPage() {
           </Form.Item>
           <Form.Item
             name="host"
-            label="主機"
-            tooltip="Git 伺服器的主機名,例如 github.com 或自架的 gitlab.example.com"
+            label="Host"
+            tooltip="The Git server hostname, e.g. github.com or a self-hosted gitlab.example.com"
             rules={[
               {
                 validator: (_, value) => {
                   const provider = form.getFieldValue('provider')
                   if (provider === 'generic' && !value?.trim()) {
-                    return Promise.reject(new Error('自架服務必須填主機名'))
+                    return Promise.reject(new Error('A host is required for self-hosted providers'))
                   }
                   return Promise.resolve()
                 },
               },
             ]}
           >
-            <Input placeholder="留空則使用預設 (github.com / gitlab.com)" disabled={!!editing} />
+            <Input placeholder="Leave blank to use the default (github.com / gitlab.com)" disabled={!!editing} />
           </Form.Item>
-          <Form.Item name="label" label="標籤 (選填)">
-            <Input placeholder="例如:個人 GitHub" maxLength={128} />
+          <Form.Item name="label" label="Label (optional)">
+            <Input placeholder="e.g. Personal GitHub" maxLength={128} />
           </Form.Item>
           <Form.Item
             name="token"
-            label={editing ? '新的 Token (留空表示不變更)' : 'Access Token'}
-            rules={editing ? [] : [{ required: true, message: '請輸入 Token' }]}
+            label={editing ? 'New token (leave blank to keep current)' : 'Access token'}
+            rules={editing ? [] : [{ required: true, message: 'Enter a token' }]}
           >
             <Input.Password
-              placeholder={editing ? '留空表示保留現有 Token' : 'ghp_… 或 glpat-…'}
+              placeholder={editing ? 'Leave blank to keep the current token' : 'ghp_… or glpat-…'}
               autoComplete="off"
             />
           </Form.Item>
