@@ -17,7 +17,6 @@ import {
   InputNumber,
   AutoComplete,
   Collapse,
-  Steps,
   Radio,
   Segmented,
   Tour,
@@ -40,6 +39,7 @@ import {
   TagOutlined,
   WarningOutlined,
   LinkOutlined,
+  CheckOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { taskApi } from '../api/client'
@@ -746,11 +746,6 @@ export default function CreateTask() {
   // the build silently runs on defaults nobody chose.
   const activeStepList = useMemo(() => activeSteps(projectType), [projectType])
 
-  const stepItems = useMemo(
-    () => activeStepList.map((s) => ({ title: s.title })),
-    [activeStepList],
-  )
-
   const currentStepKey: StepKey = activeStepList[currentStep]?.key ?? 'basic'
   const currentStepDef: StepDef = activeStepList[currentStep] ?? ALL_STEPS[0]
   const isLastStep = currentStep === activeStepList.length - 1
@@ -832,7 +827,7 @@ export default function CreateTask() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl mx-auto">
       {/* Page header — title + subtitle, form-mode toggle on the right, hairline seam under it */}
       <div className="pb-5 mb-6 border-b border-[var(--seam)] flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
@@ -867,25 +862,112 @@ export default function CreateTask() {
         </Tooltip>
       </div>
 
-      {/* Steps indicator */}
-      <div className="mb-6">
-        <Steps current={currentStep} items={stepItems} size="small" />
-      </div>
-
-      {/* Per-step hint banner — keeps user oriented at all times */}
-      <div className="mb-4 p-3 rounded-lg flex items-start gap-3 border border-cyber-500/30 bg-cyber-500/5">
-        <SettingOutlined style={{ color: 'var(--color-cyber-400)', fontSize: 16, marginTop: 2 }} />
-        <div className="flex-1">
-          <div className="text-cyber-300 text-sm font-medium">
-            Step {currentStep + 1} of {activeStepList.length}: {currentStepDef.title}
-          </div>
-          <div className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)', lineHeight: 1.6 }}>
-            {currentStepDef.description}
-          </div>
+      {/* Mobile step progress — slim indicator that replaces the rail below lg */}
+      <div className="lg:hidden mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+            {currentStepDef.title}
+          </span>
+          <span className="text-xs font-mono" style={{ color: 'var(--ink-faint)' }}>
+            {currentStep + 1} / {activeStepList.length}
+          </span>
+        </div>
+        <div
+          className="flex gap-1.5"
+          role="progressbar"
+          aria-valuenow={currentStep + 1}
+          aria-valuemin={1}
+          aria-valuemax={activeStepList.length}
+        >
+          {activeStepList.map((s, i) => (
+            <div
+              key={s.key}
+              className="h-1 flex-1 rounded-full transition-colors duration-150"
+              style={{ background: i <= currentStep ? 'var(--color-cyber-500)' : 'var(--color-void-700)' }}
+            />
+          ))}
         </div>
       </div>
 
-      <div className="glass-card p-6">
+      {/* Two-column workspace: sticky step rail + focused content pane */}
+      <div className="lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        {/* ── Left: vertical step rail (sticky, desktop only) ── */}
+        <aside className="hidden lg:block">
+          <nav aria-label="Build steps" className="sticky top-6">
+            <ol className="space-y-1">
+              {activeStepList.map((s, i) => {
+                const done = i < currentStep
+                const active = i === currentStep
+                const clickable = i <= currentStep
+                return (
+                  <li key={s.key}>
+                    <button
+                      type="button"
+                      disabled={!clickable}
+                      aria-current={active ? 'step' : undefined}
+                      onClick={() => { if (clickable) setCurrentStep(i) }}
+                      className={`w-full flex items-start gap-3 rounded-lg py-2.5 pl-3 pr-2 text-left border-l-2 transition-colors duration-150 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyber-500 ${
+                        active
+                          ? 'bg-cyber-500/10 border-cyber-500'
+                          : clickable
+                          ? 'border-transparent cursor-pointer hover:bg-[rgba(231,236,242,0.04)]'
+                          : 'border-transparent cursor-default'
+                      }`}
+                    >
+                      <span
+                        className="mt-0.5 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-mono font-medium"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          background: active
+                            ? 'var(--color-cyber-500)'
+                            : done
+                            ? 'rgba(51, 196, 137, 0.14)'
+                            : 'transparent',
+                          border: active
+                            ? '1px solid var(--color-cyber-400)'
+                            : done
+                            ? '1px solid rgba(51, 196, 137, 0.4)'
+                            : '1px solid var(--color-void-600)',
+                          color: active ? '#071018' : done ? 'var(--color-matrix-400)' : 'var(--ink-faint)',
+                        }}
+                      >
+                        {done ? <CheckOutlined /> : i + 1}
+                      </span>
+                      <span className="min-w-0">
+                        <span
+                          className="block text-sm font-semibold leading-tight"
+                          style={{
+                            fontFamily: 'var(--font-display)',
+                            color: active ? 'var(--ink)' : done ? 'var(--ink-muted)' : 'var(--ink-faint)',
+                          }}
+                        >
+                          {s.title}
+                        </span>
+                        <span className="block text-xs mt-0.5 leading-snug" style={{ color: 'var(--ink-faint)' }}>
+                          {s.short}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ol>
+          </nav>
+        </aside>
+
+        {/* ── Right: content pane ── */}
+        <div className="min-w-0">
+          {/* Focal step header — one dominant title + a muted description */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)' }}>
+              {currentStepDef.title}
+            </h2>
+            <p className="mt-1.5 text-sm" style={{ color: 'var(--ink-muted)', lineHeight: 1.65, maxWidth: '62ch' }}>
+              {currentStepDef.description}
+            </p>
+          </div>
+
         <Form
           form={form}
           layout="vertical"
@@ -2098,29 +2180,31 @@ export default function CreateTask() {
           </div>
 
           {/* ════════════════════════════════════════════
-              Navigation Buttons
+              Sticky footer action bar — Back (ghost) + exactly one primary
               ════════════════════════════════════════════ */}
-          {/* Next-step preview helper text — keeps user oriented */}
-          {!isLastStep && activeStepList[currentStep + 1] && (
-            <div className="mt-6 text-xs text-right" style={{ color: 'var(--ink-faint)' }}>
-              Next: <span className="text-cyber-400">{activeStepList[currentStep + 1].title}</span>
-              <span className="ml-2" style={{ color: 'var(--ink-faint)' }}>({activeStepList[currentStep + 1].description})</span>
+          <div
+            className="sticky bottom-0 z-10 mt-8 py-4 flex items-center justify-between gap-4 border-t border-[var(--seam)]"
+            style={{ background: 'var(--color-void-950)' }}
+          >
+            <div className="min-w-0 truncate text-xs" style={{ color: 'var(--ink-faint)' }}>
+              {!isLastStep && activeStepList[currentStep + 1] ? (
+                <>
+                  Next: <span className="text-cyber-400">{activeStepList[currentStep + 1].title}</span>
+                </>
+              ) : null}
             </div>
-          )}
-          <div className="flex gap-3 mt-3">
-            {currentStep > 0 && (
-              <Button
-                htmlType="button"
-                size="large"
-                icon={<ArrowLeftOutlined />}
-                onClick={goBack}
-                style={{ height: 48 }}
-              >
-                Back
-              </Button>
-            )}
-
-            <div className="flex-1">
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {currentStep > 0 && (
+                <Button
+                  htmlType="button"
+                  size="large"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={goBack}
+                  style={{ height: 44 }}
+                >
+                  Back
+                </Button>
+              )}
               {!isLastStep ? (
                 <Button
                   type="primary"
@@ -2128,7 +2212,7 @@ export default function CreateTask() {
                   size="large"
                   onClick={validateAndNext}
                   className="btn-cyber"
-                  style={{ width: '100%', height: 48 }}
+                  style={{ height: 44, minWidth: 148 }}
                 >
                   Next <ArrowRightOutlined />
                 </Button>
@@ -2141,7 +2225,7 @@ export default function CreateTask() {
                   size="large"
                   icon={<RocketOutlined />}
                   className="btn-cyber"
-                  style={{ width: '100%', height: 48 }}
+                  style={{ height: 44, minWidth: 164 }}
                   onClick={handleManualSubmit}
                 >
                   {isRebuild ? 'Start rebuild' : 'Start build'}
@@ -2150,6 +2234,7 @@ export default function CreateTask() {
             </div>
           </div>
         </Form>
+        </div>
       </div>
 
       {/* First-visit tour */}

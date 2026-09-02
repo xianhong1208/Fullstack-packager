@@ -8,6 +8,8 @@ export interface StepDef {
   /** Inline hint shown at the top of the step. Written for someone who does
    *  not know what the field names mean. */
   description: string
+  /** Terse one-line label for the vertical step rail, next to the title. */
+  short: string
   needsBackend?: boolean
   needsFrontend?: boolean
 }
@@ -16,12 +18,14 @@ export const ALL_STEPS: StepDef[] = [
   {
     key: 'basic',
     title: 'Basics',
+    short: 'Name, type, and source',
     description:
       'Start with three things: the project name, whether you\'re building the frontend or backend, and where the code lives (a local path or Git). This is the only required step.',
   },
   {
     key: 'backend',
     title: 'Backend',
+    short: 'Python compile settings',
     description:
       'Set how Python is compiled into a binary. Most fields have defaults — leave anything you\'re unsure about blank or at its default and click Next.',
     needsBackend: true,
@@ -29,6 +33,7 @@ export const ALL_STEPS: StepDef[] = [
   {
     key: 'frontend',
     title: 'Frontend',
+    short: 'Build and env setup',
     description:
       'Set how the frontend is built and whether to write a .env file. Use Auto-detect to fill in the build tool and output directory for you.',
     needsFrontend: true,
@@ -36,11 +41,13 @@ export const ALL_STEPS: StepDef[] = [
   {
     key: 'docker',
     title: 'Docker',
+    short: 'Optional image output',
     description: 'Also output a Docker image? If you don\'t need one, leave it off and continue.',
   },
   {
     key: 'review',
     title: 'Review',
+    short: 'Confirm and start',
     description: 'Check everything one more time. Once you start the build, the task is queued immediately.',
   },
 ]
