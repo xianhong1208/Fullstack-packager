@@ -23,6 +23,10 @@ class DecryptionError(RuntimeError):
 
 
 def _load_or_create_key() -> str:
+    # NOTE: auto-generation assumes a single writer. With multiple worker
+    # processes and no SETTINGS_ENCRYPTION_KEY, each could generate a different
+    # key. The service runs single-process by design (see deploy/build-center.service);
+    # for any other setup, set SETTINGS_ENCRYPTION_KEY explicitly before starting.
     key = get_settings().settings_encryption_key
     if key:
         return key

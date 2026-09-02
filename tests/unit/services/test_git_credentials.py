@@ -129,3 +129,19 @@ class TestResolve:
             assert provider == "gitlab"
         finally:
             get_settings.cache_clear()
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_generic_host_never_gets_gitlab_fallback(self, monkeypatch):
+        """The GitLab env fallback must not be sent to an arbitrary (generic) host."""
+        from app.config import get_settings
+
+        monkeypatch.setenv("GITLAB_TOKEN", "glpat-fallback")
+        get_settings.cache_clear()
+        try:
+            db = _FakeSession(None)
+            token, provider = await resolve_for_url(db, "https://evil.example/repo.git")
+            assert token is None
+            assert provider == "generic"
+        finally:
+            get_settings.cache_clear()

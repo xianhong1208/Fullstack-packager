@@ -35,6 +35,16 @@ class GitCredentialUpdate(BaseModel):
     label: str | None = Field(default=None, max_length=128)
     token: str | None = Field(default=None, min_length=1, max_length=1024)
 
+    @field_validator("token")
+    @classmethod
+    def _strip_token(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            raise ValueError("token must not be blank")
+        return v
+
 
 class GitCredentialResponse(BaseModel):
     """Credential as returned by the API — never includes the token itself."""

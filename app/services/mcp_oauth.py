@@ -109,6 +109,13 @@ def identity_from_token(access_token: str) -> dict:
     try:
         jwk_client = jwt.PyJWKClient(f"{issuer}/.well-known/jwks.json")
         signing_key = jwk_client.get_signing_key_from_jwt(access_token)
+    except (jwt.PyJWKClientError, httpx.HTTPError, OSError):
+        # JWKS could not be fetched (e.g. MCP Center reachable only over the back
+        # channel): fall back to an unverified read of a token we just received
+        # directly from its token endpoint over TLS. A key that IS fetched but
+        # fails verification below is fatal, not silently accepted.
+        claims = jwt.decode(access_token, options={"verify_signature": False})
+    else:
         claims = jwt.decode(
             access_token,
             signing_key.key,
@@ -116,10 +123,6 @@ def identity_from_token(access_token: str) -> dict:
             issuer=issuer,
             options={"verify_aud": False},
         )
-    except Exception:
-        # JWKS unreachable or non-JWT token: fall back to an unverified read of a
-        # token we received over the back channel moments ago.
-        claims = jwt.decode(access_token, options={"verify_signature": False})
     subject = claims.get("sub")
     if not subject:
         raise McpOAuthError("identity token has no subject")

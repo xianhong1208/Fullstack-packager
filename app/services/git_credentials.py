@@ -102,7 +102,9 @@ async def resolve_for_url(db: AsyncSession, url: str) -> tuple[str | None, str]:
         cred.last_used_at = datetime.now(timezone.utc)
         await db.commit()
         return decrypt_secret(cred.token_encrypted), cred.provider
-    if provider in ("gitlab", "generic"):
+    # The env fallback is a GitLab token, so only offer it to actual GitLab hosts —
+    # never to a generic/unknown host, which would send the token to an arbitrary server.
+    if provider == "gitlab":
         fallback = get_settings().gitlab_token
         if fallback:
             return fallback, provider

@@ -591,11 +591,15 @@ async def mcp_oauth_login() -> RedirectResponse:
     verifier, challenge = mcp_oauth.generate_pkce()
     redirect = RedirectResponse(mcp_oauth.build_authorize_url(state, challenge), status_code=302)
     # The PKCE verifier + state travel in a short-lived, signed, HttpOnly cookie.
+    # Marked Secure when the deployment redirect URI is https (kept off for the
+    # http localhost dev default so the cookie is not dropped over plain http).
+    secure = get_settings().mcp_oauth_redirect_uri.lower().startswith("https")
     redirect.set_cookie(
         _SSO_STATE_COOKIE,
         mcp_oauth.sign_flow_state(state, verifier),
         max_age=600,
         httponly=True,
+        secure=secure,
         samesite="lax",
         path="/auth/oauth/mcp",
     )
@@ -676,8 +680,24 @@ async def _find_or_create_sso_user(db: AsyncSession, identity: dict) -> User:
     role_name = "admin" if is_first_user else "user"
     role = (await db.execute(select(Role).where(Role.name == role_name))).scalar_one_or_none()
 
-    # Build a unique local username from the email local-part or the subject.
     email = identity.get("email")
+    # If a local account already uses this email, link it to the MCP identity
+    # instead of creating a duplicate (and avoid the unique-email IntegrityError).
+    if email:
+        existing = (
+            await db.execute(
+                select(User).where(User.email == email).options(selectinload(User.role))
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            if existing.oauth_provider is None:
+                existing.oauth_provider = "mcp"
+                existing.oauth_subject = subject
+                await db.commit()
+                await db.refresh(existing)
+            return existing
+
+    # Build a unique local username from the email local-part or the subject.
     base = (email.split("@")[0] if email else f"mcp-{subject[:8]}")[:80]
     username = base
     while (await db.execute(select(User).where(User.username == username))).scalar_one_or_none():
