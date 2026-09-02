@@ -217,25 +217,9 @@ export default function MonitoringPage() {
         </p>
       </div>
 
-      <div
-        className="glass-card"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          lineHeight: 1.5,
-          color: 'var(--ink-muted)',
-          background: '#0b0f14',
-          borderRadius: 8,
-          border: '1px solid var(--color-void-700)',
-          padding: '12px 16px',
-          minHeight: '80vh',
-        }}
-      >
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, borderBottom: '1px solid #1a2030', paddingBottom: 6 }}>
-        <span style={{ color: '#4c8df0', fontWeight: 'bold' }}>System monitoring</span>
-        <span style={{ color: '#555' }}>Refresh: 2s · {new Date().toLocaleTimeString()}</span>
-      </div>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.5, color: 'var(--ink-muted)' }}>
+        <section className="glass-card" style={{ padding: '16px 18px' }}>
+          <div className="mon-title">CPU</div>
 
       {/* ── CPU Meters (htop-style, 2 columns) ── */}
       <div style={{ display: 'flex', gap: 24, marginBottom: 12 }}>
@@ -292,6 +276,9 @@ export default function MonitoringPage() {
         </div>
       </div>
 
+        </section>
+        <section className="glass-card" style={{ padding: '16px 18px' }}>
+          <div className="mon-title">Memory · Swap · Disk</div>
       {/* ── Memory / Swap / Disk Meters ── */}
       <div style={{ marginBottom: 12 }}>
         {/* Memory */}
@@ -367,9 +354,12 @@ export default function MonitoringPage() {
         })()}
       </div>
 
+        </section>
+      </div>
       {/* ── GPU Section ── */}
       {stats.gpus.length > 0 && (
-        <div style={{ marginBottom: 12, borderTop: '1px solid #1a2030', paddingTop: 8 }}>
+        <section className="glass-card" style={{ padding: '16px 18px', marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink-muted)' }}>
+          <div className="mon-title">GPU</div>
           {stats.gpus.map((gpu) => {
             const loadBar = htopBar(gpu.load, BAR_WIDTH + 5, barColor(gpu.load))
             const memBar = htopBar(gpu.memory_percent, BAR_WIDTH + 5, barColor(gpu.memory_percent))
@@ -412,11 +402,13 @@ export default function MonitoringPage() {
               </div>
             )
           })}
-        </div>
+        </section>
       )}
 
       {/* ── Sparkline Charts ── */}
-      <div style={{ borderTop: '1px solid #1a2030', paddingTop: 8, marginBottom: 12 }}>
+      <section className="glass-card" style={{ padding: '16px 18px', marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink-muted)' }}>
+        <div className="mon-title">CPU trend · Network</div>
+      <div style={{ marginBottom: 12 }}>
         <div style={{ color: '#555', marginBottom: 4 }}>
           Overall CPU usage ({stats.cpu.percent.toFixed(1)}%) — {stats.cpu.count_physical} physical / {stats.cpu.count_logical} logical cores
           {stats.cpu.frequency_current ? ` @ ${stats.cpu.frequency_current}MHz` : ''}
@@ -463,7 +455,7 @@ export default function MonitoringPage() {
         </span>
         <span>{uptimeLabel}</span>
       </div>
-      </div>
+      </section>
     </div>
   )
 }
