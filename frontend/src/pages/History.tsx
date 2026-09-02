@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Typography, Table, Tag, Button, Space, Tooltip, message, Select, Empty } from 'antd'
+import { Typography, Table, Button, Space, Tooltip, message, Select, Empty } from 'antd'
 import {
   DownloadOutlined,
   RedoOutlined,
@@ -85,6 +85,19 @@ export default function History() {
   const canDownload = (record: HistoryItem) =>
     record.status === 'completed'
 
+  // Relative time in the GitHub Actions register ("3 minutes ago").
+  const timeAgo = (iso: string): string => {
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
+    if (s < 60) return '剛剛'
+    const m = Math.floor(s / 60)
+    if (m < 60) return `${m} 分鐘前`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h} 小時前`
+    const d = Math.floor(h / 24)
+    if (d < 30) return `${d} 天前`
+    return new Date(iso).toLocaleDateString()
+  }
+
   const formatDuration = (start: string, end: string | null): string => {
     if (!end) return '-'
     const ms = new Date(end).getTime() - new Date(start).getTime()
@@ -101,34 +114,58 @@ export default function History() {
 
   const columns: ColumnsType<HistoryItem> = [
     {
-      title: '專案',
-      dataIndex: 'project_name',
-      key: 'project_name',
-      width: 160,
-      render: (name: string, record) => (
-        <a
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate(`/history/${record.task_id}`)
-          }}
-          style={{ color: '#6ba6f7', cursor: 'pointer' }}
-        >
-          {name}
-        </a>
-      ),
+      // Status glyph leads the row, GitHub-Actions style.
+      title: '',
+      dataIndex: 'status',
+      key: 'status',
+      width: 44,
+      align: 'center',
+      render: (status: TaskStatus) => {
+        const m = STATUS_META[status]
+        return (
+          <Tooltip title={m.label}>
+            <span style={{ color: m.color, fontSize: 18, display: 'inline-flex' }}>{m.icon}</span>
+          </Tooltip>
+        )
+      },
+      filters: [
+        { text: '執行中', value: 'running' },
+        { text: '已完成', value: 'completed' },
+        { text: '失敗', value: 'failed' },
+        { text: '已取消', value: 'cancelled' },
+      ],
+      onFilter: (value, record) => record.status === value,
     },
     {
-      title: '類型',
-      key: 'project_type',
-      width: 120,
+      // Run identity: project name + a muted meta line (type / docker / who ran it).
+      title: '打包任務',
+      key: 'run',
       render: (_, record) => {
         const type = record.config?.project_type
-        if (!type) return <Tag>未知</Tag>
-        const cfg = projectTypeConfig[type]
+        const cfg = type ? projectTypeConfig[type] : null
         return (
-          <Tag icon={cfg.icon} color={cfg.color}>
-            {cfg.label}
-          </Tag>
+          <div className="min-w-0">
+            <a
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`/history/${record.task_id}`)
+              }}
+              style={{ color: 'var(--ink)', fontWeight: 600, cursor: 'pointer' }}
+              className="hover:!text-cyber-300"
+            >
+              {record.project_name}
+            </a>
+            <div className="flex items-center gap-2 mt-0.5 text-xs" style={{ color: 'var(--ink-faint)' }}>
+              {cfg && <span style={{ color: cfg.color }}>{cfg.label}</span>}
+              {record.config?.docker_enabled && (
+                <Tooltip title={record.config.docker_image_name || '已啟用 Docker'}>
+                  <DockerOutlined style={{ color: '#4c8df0' }} aria-label="已啟用 Docker" />
+                </Tooltip>
+              )}
+              <span aria-hidden>·</span>
+              <span>{record.user_name}</span>
+            </div>
+          </div>
         )
       },
       filters: [
@@ -139,56 +176,15 @@ export default function History() {
       onFilter: (value, record) => record.config?.project_type === value,
     },
     {
-      title: 'Docker',
-      key: 'docker',
-      width: 70,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.config?.docker_enabled) return <span style={{ color: '#4b5563' }}>-</span>
-        return (
-          <Tooltip title={record.config.docker_image_name || '已啟用 Docker'}>
-            <DockerOutlined style={{ color: '#2496ED', fontSize: 16 }} aria-label="已啟用 Docker" />
-          </Tooltip>
-        )
-      },
-      filters: [
-        { text: '有 Docker', value: true },
-        { text: '無 Docker', value: false },
-      ],
-      onFilter: (value, record) => (record.config?.docker_enabled ?? false) === value,
-    },
-    {
-      title: '使用者',
-      dataIndex: 'user_name',
-      key: 'user_name',
-      width: 100,
-    },
-    {
-      title: '狀態',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status: TaskStatus) => {
-        const m = STATUS_META[status]
-        return (
-          <Tag color={m.color} icon={m.icon}>
-            {m.label}
-          </Tag>
-        )
-      },
-      filters: [
-        { text: '已完成', value: 'completed' },
-        { text: '失敗', value: 'failed' },
-        { text: '已取消', value: 'cancelled' },
-      ],
-      onFilter: (value, record) => record.status === value,
-    },
-    {
-      title: '開始時間',
+      title: '開始',
       dataIndex: 'start_time',
       key: 'start_time',
-      width: 160,
-      render: (time: string) => new Date(time).toLocaleString(),
+      width: 130,
+      render: (time: string) => (
+        <Tooltip title={new Date(time).toLocaleString()}>
+          <span style={{ color: 'var(--ink-muted)' }}>{timeAgo(time)}</span>
+        </Tooltip>
+      ),
       sorter: (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
       defaultSortOrder: 'descend',
     },
@@ -197,7 +193,7 @@ export default function History() {
       key: 'duration',
       width: 100,
       render: (_, record) => (
-        <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85em' }}>
+        <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '0.85em', color: 'var(--ink-muted)' }}>
           {formatDuration(record.start_time, record.end_time)}
         </span>
       ),
@@ -208,9 +204,10 @@ export default function History() {
       },
     },
     {
-      title: '操作',
+      title: '',
       key: 'actions',
-      width: 160,
+      width: 150,
+      align: 'right',
       render: (_, record) => (
         <Space size="small">
           {record.config && (
