@@ -6,10 +6,14 @@ from typing import Annotated
 
 import psutil
 from fastapi import APIRouter, Depends
-from sqlalchemy import text
+from datetime import date, datetime, timedelta, timezone
+from collections import defaultdict
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.task import Task
 from app.services.permission import (
     CurrentUser,
     PermissionCode,
@@ -168,141 +172,105 @@ async def get_build_stats(
     reads always match the list they can open.
     """
     scoped = not current_user.has_permission(PermissionCode.HISTORY_VIEW_ALL)
-    params: dict = {"days": max(1, min(days, 365))}
-    where_user = ""
+    window_days = max(1, min(days, 365))
+    cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
+
+    # Fetch the window's rows once and aggregate in Python. The window is bounded
+    # (<= 365 days), so this stays cheap while remaining portable across SQLite
+    # and PostgreSQL — no dialect-specific SQL (FILTER / array_agg / jsonb / casts).
+    stmt = select(Task).where(Task.start_time > cutoff)
     if scoped:
-        where_user = " AND user_name = :user"
-        params["user"] = current_user.username
+        stmt = stmt.where(Task.user_name == current_user.username)
+    rows = list((await db.execute(stmt)).scalars().all())
 
-    summary_row = (
-        await db.execute(
-            text(f"""
-            SELECT count(*) AS total,
-                   count(*) FILTER (WHERE status::text = 'COMPLETED') AS completed,
-                   count(*) FILTER (WHERE status::text = 'FAILED')    AS failed,
-                   count(*) FILTER (WHERE status::text = 'CANCELLED') AS cancelled,
-                   avg(extract(epoch FROM (end_time - start_time)))
-                       FILTER (WHERE status::text = 'COMPLETED' AND end_time IS NOT NULL)
-                       AS avg_seconds
-            FROM history
-            WHERE start_time > now() - make_interval(days => :days){where_user}
-        """),
-            params,
-        )
-    ).mappings().one()
+    def _status(t: Task) -> str:
+        return (t.status or "").upper()
 
+    total = len(rows)
+    completed = sum(1 for t in rows if _status(t) == "COMPLETED")
+    failed = sum(1 for t in rows if _status(t) == "FAILED")
+    cancelled = sum(1 for t in rows if _status(t) == "CANCELLED")
+
+    durations = [
+        (t.end_time - t.start_time).total_seconds()
+        for t in rows
+        if _status(t) == "COMPLETED" and t.end_time is not None and t.start_time is not None
+    ]
+    avg_seconds = sum(durations) / len(durations) if durations else None
+
+    # Daily totals, keyed by calendar day.
+    by_day: dict[date, dict] = defaultdict(lambda: {"total": 0, "completed": 0})
+    for t in rows:
+        if t.start_time is None:
+            continue
+        d = t.start_time.date()
+        by_day[d]["total"] += 1
+        if _status(t) == "COMPLETED":
+            by_day[d]["completed"] += 1
     daily = [
-        dict(r)
-        for r in (
-            await db.execute(
-                text(f"""
-            SELECT start_time::date AS day,
-                   count(*) AS total,
-                   count(*) FILTER (WHERE status::text = 'COMPLETED') AS completed
-            FROM history
-            WHERE start_time > now() - make_interval(days => :days){where_user}
-            GROUP BY 1 ORDER BY 1
-        """),
-                params,
-            )
-        ).mappings()
+        {
+            "day": str(d),
+            "total": v["total"],
+            "completed": v["completed"],
+            "success_rate": round(v["completed"] / v["total"] * 100, 1) if v["total"] else None,
+        }
+        for d, v in sorted(by_day.items())
     ]
 
-    # Per-project rollup. Every project is listed, not just the failing ones —
-    # "which of my projects build cleanly" is the question people actually
-    # arrive with, and showing only failures makes a healthy project invisible.
-    #
-    # `recent` carries the last few outcomes newest-first so the UI can render
-    # a run strip: three greens then a red reads very differently from an
-    # alternating pattern, and neither is visible in a success percentage.
-    projects = [
-        dict(r)
-        for r in (
-            await db.execute(
-                text(f"""
-            SELECT project_name,
-                   count(*) AS total,
-                   count(*) FILTER (WHERE status::text = 'COMPLETED') AS completed,
-                   count(*) FILTER (WHERE status::text = 'FAILED')    AS failed,
-                   max(start_time) AS last_run,
-                   (array_agg(status::text ORDER BY start_time DESC))[1] AS last_status,
-                   (array_agg(status::text ORDER BY start_time DESC))[1:12] AS recent
-            FROM history
-            WHERE start_time > now() - make_interval(days => :days){where_user}
-            GROUP BY 1
-            ORDER BY last_run DESC
-            LIMIT 25
-        """),
-                params,
-            )
-        ).mappings()
-    ]
+    # Per-project rollup. `recent` is the last 12 outcomes newest-first so the UI
+    # can render a run strip. Every project is listed, not only the failing ones.
+    by_project: dict[str, list[Task]] = defaultdict(list)
+    for t in rows:
+        by_project[t.project_name].append(t)
+    projects = []
+    for name, tasks in by_project.items():
+        tasks.sort(key=lambda t: (t.start_time or datetime.min.replace(tzinfo=timezone.utc)), reverse=True)
+        p_completed = sum(1 for t in tasks if _status(t) == "COMPLETED")
+        p_failed = sum(1 for t in tasks if _status(t) == "FAILED")
+        last_run = tasks[0].start_time if tasks else None
+        projects.append({
+            "project_name": name,
+            "total": len(tasks),
+            "completed": p_completed,
+            "failed": p_failed,
+            "success_rate": round(p_completed / len(tasks) * 100, 1) if tasks else None,
+            "last_status": _status(tasks[0]).lower() if tasks else "",
+            "last_run": last_run.isoformat() if last_run else None,
+            "recent": [_status(t).lower() for t in tasks[:12]],
+        })
+    projects.sort(key=lambda p: p["last_run"] or "", reverse=True)
+    projects = projects[:25]
 
-    # Failure reasons come from the diagnosis the build already produced —
-    # result is a JSON column, so it needs the ::jsonb cast for -> traversal.
-    failures = [
-        dict(r)
-        for r in (
-            await db.execute(
-                text(f"""
-            SELECT d->>'problem' AS problem, count(*) AS count
-            FROM history,
-                 LATERAL jsonb_array_elements(result::jsonb->'diagnosis') AS d
-            WHERE status::text = 'FAILED'
-              AND result IS NOT NULL
-              AND result::jsonb ? 'diagnosis'
-              AND start_time > now() - make_interval(days => :days){where_user}
-            GROUP BY 1 ORDER BY count DESC LIMIT 8
-        """),
-                params,
-            )
-        ).mappings()
-    ]
-
-    total = summary_row["total"] or 0
-    failed = summary_row["failed"] or 0
-    diagnosed = sum(f["count"] for f in failures)
+    # Failure reasons from the diagnosis each build already produced (result JSON).
+    problem_counts: dict[str, int] = defaultdict(int)
+    for t in rows:
+        if _status(t) != "FAILED" or not isinstance(t.result, dict):
+            continue
+        for d in t.result.get("diagnosis") or []:
+            problem = d.get("problem") if isinstance(d, dict) else None
+            if problem:
+                problem_counts[problem] += 1
+    top_failures = sorted(
+        ({"problem": k, "count": v} for k, v in problem_counts.items()),
+        key=lambda f: f["count"],
+        reverse=True,
+    )[:8]
+    diagnosed = sum(f["count"] for f in top_failures)
 
     return {
-        "window_days": params["days"],
+        "window_days": window_days,
         "scope": "own" if scoped else "all",
         "summary": {
             "total": total,
-            "completed": summary_row["completed"] or 0,
+            "completed": completed,
             "failed": failed,
-            "cancelled": summary_row["cancelled"] or 0,
-            "success_rate": round((summary_row["completed"] or 0) / total * 100, 1) if total else None,
-            "avg_duration_seconds": round(float(summary_row["avg_seconds"]), 1)
-            if summary_row["avg_seconds"] is not None
-            else None,
+            "cancelled": cancelled,
+            "success_rate": round(completed / total * 100, 1) if total else None,
+            "avg_duration_seconds": round(avg_seconds, 1) if avg_seconds is not None else None,
         },
-        "daily": [
-            {
-                "day": str(d["day"]),
-                "total": d["total"],
-                "completed": d["completed"],
-                "success_rate": round(d["completed"] / d["total"] * 100, 1) if d["total"] else None,
-            }
-            for d in daily
-        ],
-        "projects": [
-            {
-                "project_name": p["project_name"],
-                "total": p["total"],
-                "completed": p["completed"],
-                "failed": p["failed"],
-                "success_rate": round(p["completed"] / p["total"] * 100, 1) if p["total"] else None,
-                "last_status": (p["last_status"] or "").lower(),
-                "last_run": p["last_run"].isoformat() if p["last_run"] else None,
-                # Newest-first, lowercased to match the status vocabulary the
-                # frontend already uses everywhere else.
-                "recent": [s.lower() for s in (p["recent"] or [])],
-            }
-            for p in projects
-        ],
-        "top_failures": [{"problem": f["problem"], "count": f["count"]} for f in failures],
-        # How many failures explained themselves. Low coverage means users are
-        # retrying blind, which is a worse problem than the failure rate itself.
+        "daily": daily,
+        "projects": projects,
+        "top_failures": top_failures,
         "diagnosis_coverage": round(diagnosed / failed * 100, 1) if failed else None,
         "environment": _collect_build_environment(),
     }
