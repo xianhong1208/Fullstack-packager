@@ -48,6 +48,13 @@ class Settings(BaseSettings):
 
     # JWT settings (optional - if not set, a random key is generated on startup)
     jwt_secret_key: str | None = None
+
+    # Bootstrap admin: created on first startup when the database has no users, so
+    # you can sign in immediately. CHANGE THE PASSWORD after first login (or set
+    # these before first start). Set BOOTSTRAP_ADMIN_PASSWORD empty to disable and
+    # use the self-registration flow instead.
+    bootstrap_admin_username: str = "admin"
+    bootstrap_admin_password: str = "password123"
     # Fernet key used to encrypt stored secrets (Git credentials) at rest. If not
     # set, one is generated on first use and appended to .env, like the JWT secret.
     settings_encryption_key: str | None = None

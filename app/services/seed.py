@@ -8,9 +8,15 @@ wildcard permission. Safe to run on every boot — existing rows are left untouc
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.migrations.migrate_auth_v2 import PERMISSIONS, ROLES
 from app.models.permission import Permission
 from app.models.role import Role
+from app.models.user import User
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def seed_rbac(db: AsyncSession) -> None:
@@ -41,3 +47,33 @@ async def seed_rbac(db: AsyncSession) -> None:
                 role.permissions.append(existing_perms[perm_code])
         db.add(role)
     await db.commit()
+    await _seed_bootstrap_admin(db)
+
+
+async def _seed_bootstrap_admin(db: AsyncSession) -> None:
+    """Create the default admin account on a database that has no users yet.
+
+    Skipped when any user already exists (so it never resets a changed password)
+    or when BOOTSTRAP_ADMIN_PASSWORD is blank (self-registration is used instead).
+    """
+    from app.services.auth import hash_password
+
+    settings = get_settings()
+    if not settings.bootstrap_admin_password:
+        return
+    if (await db.execute(select(User))).first() is not None:
+        return
+
+    admin_role = (await db.execute(select(Role).where(Role.name == "admin"))).scalar_one_or_none()
+    admin = User(
+        username=settings.bootstrap_admin_username,
+        password_hash=hash_password(settings.bootstrap_admin_password),
+        role_id=admin_role.id if admin_role else None,
+        is_active=True,
+    )
+    db.add(admin)
+    await db.commit()
+    logger.warning(
+        "Created bootstrap admin '%s' with the default password — change it after first login.",
+        settings.bootstrap_admin_username,
+    )

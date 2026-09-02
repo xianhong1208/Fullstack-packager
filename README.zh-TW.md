@@ -31,7 +31,7 @@ cp .env.example .env          # 選用;用 SQLite 完全免設定
 uv run python main.py         # 先套用 migration,再於 http://0.0.0.0:5018 提供服務
 ```
 
-- 開啟 `http://localhost:5018`。你建立的第一個帳號即為管理員。
+- 開啟 `http://localhost:5018`,用預設帳號 **`admin` / `password123`** 登入(首次啟動自動建立——登入後請改密碼,或在首次啟動前設 `BOOTSTRAP_ADMIN_*`)。
 - **新增 Git 憑證**(選用,私有 repo 需要):設定 → Git 憑證 → 選 GitHub / GitLab,貼上 Personal Access Token。
 - **建立打包**:選本機路徑或 Git URL、選模式、送出。日誌即時串流;完成的產物可下載(或匯出成 Docker image `.tar.gz`)。
 
