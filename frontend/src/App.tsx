@@ -12,6 +12,7 @@ import {
   SettingOutlined,
   TeamOutlined,
   SafetyOutlined,
+  KeyOutlined,
   DashboardOutlined,
   ClockCircleOutlined,
   MenuOutlined,
@@ -30,6 +31,7 @@ const SecuritySettingsPage = lazy(() => import('./pages/SecuritySettingsPage'))
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'))
 const UserDetailPage = lazy(() => import('./pages/admin/UserDetailPage'))
 const RoleManagementPage = lazy(() => import('./pages/admin/RoleManagementPage'))
+const GitCredentialsPage = lazy(() => import('./pages/admin/GitCredentialsPage'))
 const MonitoringPage = lazy(() => import('./pages/MonitoringPage'))
 import { useTaskStore } from './store/taskStore'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -203,6 +205,15 @@ function AppLayout() {
               >
                 <span className="text-lg"><SafetyOutlined /></span>
                 <span className="flex-1 text-left">角色管理</span>
+              </button>
+            </PermissionGate>
+            <PermissionGate permission="user:manage">
+              <button
+                onClick={() => handleNav('/settings/git-credentials')}
+                className={`nav-item w-full ${location.pathname === '/settings/git-credentials' ? 'active' : ''}`}
+              >
+                <span className="text-lg"><KeyOutlined /></span>
+                <span className="flex-1 text-left">Git 憑證</span>
               </button>
             </PermissionGate>
           </div>
@@ -419,6 +430,14 @@ function App() {
                     element={
                       <PermissionRoute permission="role:view">
                         <RoleManagementPage />
+                      </PermissionRoute>
+                    }
+                  />
+                  <Route
+                    path="settings/git-credentials"
+                    element={
+                      <PermissionRoute permission="user:manage">
+                        <GitCredentialsPage />
                       </PermissionRoute>
                     }
                   />
