@@ -170,7 +170,7 @@ export default function CreateTask() {
   const [frontendPreviewedFor, setFrontendPreviewedFor] = useState<string>('')
   // In git mode, env file content cannot be read from disk on demand —
   // we cache the contents returned by the preview endpoint here so the
-  // "從專案載入" button becomes an instant local lookup.
+  // "Load from project" button becomes an instant local lookup.
   const [gitEnvFilesContent, setGitEnvFilesContent] = useState<Record<string, string>>({})
 
   // Track the previously seen source_type so we can distinguish
@@ -1169,7 +1169,7 @@ export default function CreateTask() {
           {/* ════ end Step: basic ════ */}
 
           {/* ════════════════════════════════════════════
-              Step: Backend — Nuitka 設定(僅 hasBackend)
+              Step: Backend — Nuitka settings (only when hasBackend)
               ════════════════════════════════════════════ */}
           <div style={{ display: currentStepKey === 'backend' ? 'block' : 'none' }}>
             {hasBackend && (
@@ -1407,7 +1407,7 @@ export default function CreateTask() {
 
                         <Divider style={dividerStyle} />
 
-                        {/* ── Nuitka 編譯最佳化與診斷 ── */}
+                        {/* ── Nuitka compile optimization & diagnostics ── */}
                         <div className="mb-1 text-gray-300 text-sm">
                           <SettingOutlined className="mr-2" />編譯最佳化與診斷
                         </div>
@@ -1579,7 +1579,7 @@ export default function CreateTask() {
           {/* ════ end Step: backend ════ */}
 
           {/* ════════════════════════════════════════════
-              Step: Frontend(僅 showFrontendSettings)
+              Step: Frontend (only when showFrontendSettings)
               ════════════════════════════════════════════ */}
           <div style={{ display: currentStepKey === 'frontend' ? 'block' : 'none' }}>
             {showFrontendSettings && (

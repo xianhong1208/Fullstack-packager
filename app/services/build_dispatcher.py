@@ -656,7 +656,7 @@ async def start_build_task(task_id: str, config: BuildConfig) -> None:
                 logs = await task_manager.get_logs(task_id)
                 # Always persist an explanation, not only when a rule matched.
                 # Previously this was `if diags:`, so 87% of failures stored
-                # nothing and the user saw a bare red "失敗" — which is how one
+                # nothing and the user saw a bare red "failed" — which is how one
                 # project reached 55 retries in five weeks. The report falls
                 # back to naming the failed stage and the log's error lines,
                 # which is at least something to act on or forward.

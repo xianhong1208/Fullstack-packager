@@ -445,7 +445,7 @@ class BuildResult(BaseModel):
     # Populated on failure: recognized failure patterns + how to fix them.
     # Always non-empty for a failed build — when no pattern matches, it carries
     # the failing stage and a pointer to the error lines below, so a user is
-    # never shown a bare "失敗" with nothing to act on.
+    # never shown a bare "failed" with nothing to act on.
     diagnosis: list[Diagnosis] = Field(default_factory=list)
     # The log lines that most likely explain the failure, oldest first. Kept
     # separate from the diagnosis so the UI can show them verbatim — someone

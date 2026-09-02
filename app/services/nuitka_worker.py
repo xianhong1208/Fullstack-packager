@@ -577,7 +577,7 @@ def _resolve_smoke_env(config: BuildConfig, project_path: Path) -> tuple[dict[st
     """Decide which env vars to give the smoke-tested binary.
 
     Priority (per user requirement): the Docker ENV block the user filled in
-    ('執行期 Docker ENV'), because that's the real runtime config; if empty,
+    ('runtime Docker ENV'), because that's the real runtime config; if empty,
     fall back to the project's .env file; otherwise nothing.
     Returns (env_dict, human-readable source description).
     """

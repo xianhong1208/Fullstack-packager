@@ -1091,7 +1091,7 @@ def _serve_task_output(task) -> Response:
     # approach broke on big GPU/ML outputs (torch/rocm libs run to several GB):
     #   * the synchronous tarfile.add() blocked the async event loop for the
     #     entire build — freezing every other request AND delaying the FIRST
-    #     response byte by minutes, so the browser gave up ("系統忙碌中") before
+    #     response byte by minutes, so the browser gave up ("system busy") before
     #     the download even started;
     #   * the temp file could exhaust a small /tmp tmpfs.
     # `w|gz` is tarfile's non-seekable STREAMING mode: compressed bytes flow out

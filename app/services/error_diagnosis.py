@@ -619,7 +619,7 @@ def build_failure_report(log_text: str, *, stage: str | None = None) -> dict:
 
     Coverage of the pattern rules was 13% of real failures, and the caller only
     persisted a result when something matched. So 87% of the time a user was
-    shown a red "失敗" and nothing else, which is how one project accumulated
+    shown a red "failed" and nothing else, which is how one project accumulated
     55 retries in five weeks: there was nothing to act on, so people just ran
     it again.
 

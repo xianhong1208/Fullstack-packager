@@ -12,11 +12,11 @@ import type { TaskStatus, VerifyStatus } from '../api/types'
 
 // Single source of truth for task-status presentation. Previously copied
 // verbatim into TaskDetail / HistoryDetail / TaskCard / History with three
-// different label styles (英文 "Running" vs 繁中 vs 原始 enum). Unified here.
+// different label styles (English "Running" vs Traditional Chinese vs raw enum). Unified here.
 export interface StatusMeta {
   color: string
   bgColor: string
-  label: string // 繁中
+  label: string // Traditional Chinese display label
   icon: ReactNode
 }
 

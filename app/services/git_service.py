@@ -803,8 +803,8 @@ async def preview_frontend(
 REPO_CHECKS: list[dict] = [
     # {
     #     "key": str — stable identifier (e.g. "venv")
-    #     "label_ok": str — 繁中 label when the check finds the target
-    #     "label_missing": str — 繁中 label when it doesn't
+    #     "label_ok": str — Traditional Chinese label when the check finds the target
+    #     "label_missing": str — Traditional Chinese label when it doesn't
     #     "status_when_missing": "warn" | "missing" — is it bad, or just a hint?
     #     "paths": list[str] — relative paths to look for. First match wins.
     # },
