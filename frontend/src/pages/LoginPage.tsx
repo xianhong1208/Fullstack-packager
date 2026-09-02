@@ -112,8 +112,8 @@ export default function LoginPage() {
       <div className="glass-card w-full max-w-md p-8">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-md bg-gradient-to-br from-cyber-500/20 to-cyber-600/20 border border-cyber-500/30 mb-4">
-            <BuildOutlined className="text-3xl text-cyber-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-cyber-500 mb-4">
+            <BuildOutlined className="text-3xl text-void-950" />
           </div>
           <h1 className="text-2xl font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
             Build Center

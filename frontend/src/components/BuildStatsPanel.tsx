@@ -10,9 +10,9 @@ const RATE_WARN = 70
 
 function rateColor(rate: number | null): string {
   if (rate === null) return '#94a3b8'
-  if (rate >= RATE_OK) return '#4ade80'
-  if (rate >= RATE_WARN) return '#fbbf24'
-  return '#f87171'
+  if (rate >= RATE_OK) return '#56d6a1'
+  if (rate >= RATE_WARN) return '#f0bd5e'
+  return '#f27d7d'
 }
 
 function formatDuration(seconds: number | null): string {
@@ -78,10 +78,10 @@ function Sparkline({ points }: { points: { day: string; rate: number }[] }) {
 /** Colour for a single build outcome. Shared by the run strip and the
  *  "latest result" dot so the same outcome never reads two different ways. */
 const STATUS_COLOR: Record<string, string> = {
-  completed: '#4ade80',
-  failed: '#f87171',
+  completed: '#56d6a1',
+  failed: '#f27d7d',
   cancelled: '#94a3b8',
-  running: '#f09a5e',
+  running: '#6ba6f7',
   pending: '#64748b',
 }
 const STATUS_LABEL: Record<string, string> = {
@@ -148,10 +148,10 @@ export default function BuildStatsPanel({ stats }: { stats: BuildStats }) {
       {environment.degraded.length > 0 && (
         <div
           className="glass-card p-4 mb-4"
-          style={{ borderLeft: '3px solid #f87171', background: 'rgba(239,68,68,0.06)' }}
+          style={{ borderLeft: '3px solid #f27d7d', background: 'rgba(239,68,68,0.06)' }}
         >
           <div className="flex items-center gap-2 mb-1">
-            <WarningOutlined style={{ color: '#f87171' }} />
+            <WarningOutlined style={{ color: '#f27d7d' }} />
             <span className="text-sm font-medium text-alert-400">
               編譯環境降級：Python {environment.degraded.join('、')} 無法使用
             </span>

@@ -872,7 +872,7 @@ export default function CreateTask() {
           border: '1px solid rgba(34, 211, 238, 0.25)',
         }}
       >
-        <SettingOutlined style={{ color: '#f09a5e', fontSize: 16, marginTop: 2 }} />
+        <SettingOutlined style={{ color: '#6ba6f7', fontSize: 16, marginTop: 2 }} />
         <div className="flex-1">
           <div className="text-cyber-300 text-sm font-medium">
             步驟 {currentStep + 1} / {activeStepList.length}:{currentStepDef.title}
@@ -1189,12 +1189,12 @@ export default function CreateTask() {
                   <div
                     className="glass-card p-4 mb-4"
                     style={{
-                      borderLeft: '3px solid #fbbf24',
+                      borderLeft: '3px solid #f0bd5e',
                       background: 'rgba(251, 191, 36, 0.06)',
                     }}
                   >
                     <div className="flex items-start gap-2">
-                      <WarningOutlined style={{ color: '#fbbf24', marginTop: 3 }} />
+                      <WarningOutlined style={{ color: '#f0bd5e', marginTop: 3 }} />
                       <div className="flex-1">
                         <div className="text-sm text-amber-200">
                           這個專案的套件是用 <b>Python {pythonMismatch.detected}</b> 編譯的，
@@ -1222,7 +1222,7 @@ export default function CreateTask() {
                   <div
                     className="glass-card p-4 mb-4"
                     style={{
-                      borderLeft: '3px solid #f87171',
+                      borderLeft: '3px solid #f27d7d',
                       background: 'rgba(239, 68, 68, 0.06)',
                     }}
                   >

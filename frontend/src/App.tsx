@@ -145,11 +145,11 @@ function AppLayout() {
 
   // Shared sidebar content, reused by the desktop sidebar and the mobile drawer.
   const sidebarContent = (
-    <div className="h-full flex flex-col bg-void-900/50">
+    <div className="h-full flex flex-col bg-void-900">
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-5 border-b border-gray-700/50">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyber-500/20 to-cyber-600/20 border border-cyber-500/30 flex items-center justify-center">
-          <BuildOutlined className="text-lg text-cyber-400" />
+        <div className="w-9 h-9 rounded-md bg-cyber-500 flex items-center justify-center">
+          <BuildOutlined className="text-lg text-void-950" />
         </div>
         <span className="text-lg font-semibold text-white" style={{ fontFamily: 'var(--font-display)' }}>
           Build Center
@@ -224,8 +224,8 @@ function AppLayout() {
       <div className="p-4 border-t border-gray-700/50">
         <div className="glass-card p-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyber-500/30 to-cyber-600/30 border border-cyber-500/40 flex items-center justify-center">
-              <span className="text-sm font-medium text-cyber-400">
+            <div className="w-9 h-9 rounded-full bg-void-700 border border-cyber-500/40 flex items-center justify-center">
+              <span className="text-sm font-semibold text-cyber-300">
                 {user?.username?.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -261,7 +261,7 @@ function AppLayout() {
         type="button"
         onClick={() => setMobileNavOpen(true)}
         aria-label="開啟導覽選單"
-        className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-lg flex items-center justify-center border border-cyber-500/30 bg-void-900/80 text-cyber-400 backdrop-blur hover:bg-cyber-500/10 transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-md flex items-center justify-center border border-void-600 bg-void-900 text-cyber-300 hover:border-cyber-500 transition-colors"
       >
         <MenuOutlined className="text-lg" />
       </button>
@@ -276,8 +276,8 @@ function AppLayout() {
         title="導覽選單"
         rootClassName="lg:hidden"
         styles={{
-          body: { padding: 0, background: '#14110d' },
-          header: { background: '#14110d', borderBottom: '1px solid rgba(55, 65, 81, 0.5)' },
+          body: { padding: 0, background: '#0e1319' },
+          header: { background: '#0e1319', borderBottom: '1px solid rgba(55, 65, 81, 0.5)' },
         }}
       >
         {sidebarContent}
@@ -285,7 +285,8 @@ function AppLayout() {
 
       {/* Main content — Suspense boundary sits INSIDE the authenticated layout
           so the sidebar stays visible while a lazy route page loads */}
-      <main className="flex-1 p-6 pt-16 lg:pt-6 overflow-auto">
+      <main className="flex-1 overflow-auto px-6 pt-16 pb-10 lg:pt-8">
+        <div className="mx-auto w-full max-w-[1440px]">
         <Suspense
           fallback={
             <div className="min-h-[60vh] flex items-center justify-center">
@@ -295,6 +296,7 @@ function AppLayout() {
         >
           <Outlet />
         </Suspense>
+        </div>
       </main>
 
       {/* Idle timeout warning modal */}
@@ -342,48 +344,48 @@ function App() {
         locale={zhTW}
         theme={{
           token: {
-            // Foundry theme: ember/copper primary on warm graphite.
-            colorPrimary: '#de7c3e',
-            colorInfo: '#5c86a2',
-            colorSuccess: '#4fa98a',
-            colorWarning: '#dfa53a',
-            colorError: '#e0544a',
-            borderRadius: 5,
-            fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-            colorBgContainer: '#1b1712',
-            colorBgElevated: '#241e17',
-            colorBgLayout: '#14110d',
-            colorBgSpotlight: '#322a20',
-            colorText: '#ece4d8',
-            colorTextSecondary: '#a99c8a',
-            colorTextTertiary: '#6e6355',
-            colorBorder: '#3f3527',
-            colorBorderSecondary: '#322a20',
+            // Instrument theme: flat cobalt primary on cool slate.
+            colorPrimary: '#4c8df0',
+            colorInfo: '#4c8df0',
+            colorSuccess: '#33c489',
+            colorWarning: '#e6a53a',
+            colorError: '#ec5f5f',
+            borderRadius: 7,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            colorBgContainer: '#141b23',
+            colorBgElevated: '#1b232d',
+            colorBgLayout: '#0e1319',
+            colorBgSpotlight: '#273241',
+            colorText: '#e7ecf2',
+            colorTextSecondary: '#93a0b0',
+            colorTextTertiary: '#5e6b7a',
+            colorBorder: '#34424f',
+            colorBorderSecondary: '#273241',
           },
           components: {
             Modal: {
-              contentBg: '#241e17',
+              contentBg: '#1b232d',
               headerBg: 'transparent',
-              titleColor: '#ece4d8',
-              colorIcon: '#6e6355',
-              colorIconHover: '#ece4d8',
+              titleColor: '#e7ecf2',
+              colorIcon: '#5e6b7a',
+              colorIconHover: '#e7ecf2',
             },
             Form: {
-              labelColor: '#a99c8a',
+              labelColor: '#93a0b0',
             },
             Input: {
-              colorBgContainer: '#16120d',
-              colorBorder: '#322a20',
-              colorText: '#ece4d8',
+              colorBgContainer: '#0e1319',
+              colorBorder: '#273241',
+              colorText: '#e7ecf2',
             },
             Select: {
-              colorBgContainer: '#16120d',
-              colorBgElevated: '#241e17',
+              colorBgContainer: '#0e1319',
+              colorBgElevated: '#1b232d',
               colorBorder: '#374151',
-              optionSelectedBg: 'rgba(222, 124, 62, 0.2)',
+              optionSelectedBg: 'rgba(76, 141, 240, 0.2)',
             },
             Checkbox: {
-              colorBgContainer: '#1b1712',
+              colorBgContainer: '#141b23',
               colorBorder: '#374151',
             },
           },

@@ -170,10 +170,10 @@ export default function TaskDetail() {
       {task.status === 'failed' && (
         <div
           className="glass-card p-5 mb-6"
-          style={{ borderLeft: '3px solid #f87171', background: 'rgba(239,68,68,0.06)' }}
+          style={{ borderLeft: '3px solid #f27d7d', background: 'rgba(239,68,68,0.06)' }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <CloseCircleOutlined style={{ color: '#f87171' }} />
+            <CloseCircleOutlined style={{ color: '#f27d7d' }} />
             <h3 className="text-base font-medium text-alert-400">打包失敗</h3>
           </div>
           {task.status_msg && (
@@ -327,7 +327,7 @@ export default function TaskDetail() {
               <div className="space-y-1.5">
                 {result.preflight.map((c) => (
                   <div key={c.label} className="flex items-start gap-2 text-sm">
-                    <span style={{ color: c.passed ? '#4ade80' : c.critical ? '#f87171' : '#fbbf24', marginTop: 2 }}>
+                    <span style={{ color: c.passed ? '#56d6a1' : c.critical ? '#f27d7d' : '#f0bd5e', marginTop: 2 }}>
                       {c.passed ? <CheckCircleOutlined /> : c.critical ? <CloseCircleOutlined /> : <WarningOutlined />}
                     </span>
                     <span className="text-gray-300 w-28 flex-shrink-0">{c.label}</span>
@@ -370,12 +370,12 @@ export default function TaskDetail() {
                 showInfo={false}
                 strokeColor={
                   task.status === 'completed'
-                    ? '#4ade80'
+                    ? '#56d6a1'
                     : task.status === 'failed'
-                    ? '#f87171'
+                    ? '#f27d7d'
                     : {
-                        '0%': '#c6692f',
-                        '100%': '#f09a5e',
+                        '0%': '#3b7ad6',
+                        '100%': '#6ba6f7',
                       }
                 }
                 trailColor="#322a20"
@@ -505,7 +505,7 @@ export default function TaskDetail() {
                 style={{
                   background: 'rgba(239, 68, 68, 0.1)',
                   borderColor: 'rgba(239, 68, 68, 0.3)',
-                  color: '#f87171',
+                  color: '#f27d7d',
                 }}
               >
                 取消任務
@@ -528,9 +528,9 @@ export default function TaskDetail() {
                   }
                   className="w-full"
                   style={{
-                    background: 'rgba(6, 182, 212, 0.1)',
-                    borderColor: 'rgba(6, 182, 212, 0.3)',
-                    color: '#f09a5e',
+                    background: 'rgba(76, 141, 240, 0.1)',
+                    borderColor: 'rgba(76, 141, 240, 0.3)',
+                    color: '#6ba6f7',
                   }}
                 >
                   重新打包
@@ -554,7 +554,7 @@ export default function TaskDetail() {
                     style={{
                       background: 'rgba(34, 197, 94, 0.1)',
                       borderColor: 'rgba(34, 197, 94, 0.3)',
-                      color: '#4ade80',
+                      color: '#56d6a1',
                     }}
                   >
                     下載輸出

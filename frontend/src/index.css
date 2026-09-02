@@ -1,62 +1,62 @@
 /* Google Fonts - must be first.
-   Foundry identity: Archivo (industrial signage display), IBM Plex Sans
-   (engineering-heritage body), IBM Plex Mono (logs / ids / ports). */
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+   "Instrument" identity: Bricolage Grotesque (characterful display), Inter
+   (body), JetBrains Mono (data / logs / ids). */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @import "tailwindcss";
 
 /* =========================================================================
-   "Foundry" theme — a control room for a software machine shop.
-   Warm graphite (brushed gunmetal) ground; a hot/cold accent pair —
-   ember/copper (the heat of compilation) and steel-blue (cold, idle);
-   patina green for success (aged copper). Token NAMES are kept so the few
-   Tailwind utilities and shared classes keep working; only values change.
+   "Instrument" theme — a precision panel for a build system.
+   Cool cobalt-slate ground, a FLAT / matte language (no glows, gradients or
+   glassmorphism): crisp 1px seams, solid fills, a faint measured grid. Cobalt
+   is structure/primary; mint = pass, coral = fail, amber = attention. Token
+   NAMES are kept (void/cyber/matrix/alert/signal) so every shared class and
+   utility re-skins from these values alone.
    ========================================================================= */
 @theme {
-  /* Void → warm graphite / brushed steel surfaces (darkest → raised) */
-  --color-void-950: #14110d;
-  --color-void-900: #1b1712;
-  --color-void-800: #241e17;
-  --color-void-700: #322a20;
-  --color-void-600: #3f3527;
+  /* Void → cool slate surfaces (ground → raised) */
+  --color-void-950: #0e1319;
+  --color-void-900: #141b23;
+  --color-void-800: #1b232d;
+  --color-void-700: #273241;
+  --color-void-600: #34424f;
 
-  /* Cyber → ember / molten copper (primary, brand, running builds) */
-  --color-cyber-600: #c6692f;
-  --color-cyber-500: #de7c3e;
-  --color-cyber-400: #f09a5e;
-  --color-cyber-300: #f6b584;
-  --color-cyber-200: #fbd0ad;
+  /* Cyber → cobalt / azure (primary, brand, running builds) */
+  --color-cyber-600: #3b7ad6;
+  --color-cyber-500: #4c8df0;
+  --color-cyber-400: #6ba6f7;
+  --color-cyber-300: #9cc4fb;
+  --color-cyber-200: #c6ddfd;
 
-  /* Steel → the cold half of the pair (idle, info, structure) */
-  --color-steel-500: #5c86a2;
-  --color-steel-400: #7ba0b8;
+  /* Steel → a muted slate-blue for secondary structure */
+  --color-steel-500: #5b7387;
+  --color-steel-400: #7a92a6;
 
-  /* Matrix → patina / verdigris (aged copper) for success */
-  --color-matrix-500: #4fa98a;
-  --color-matrix-400: #6fbfa1;
+  /* Matrix → mint / spring green for success */
+  --color-matrix-500: #33c489;
+  --color-matrix-400: #56d6a1;
 
-  /* Alert → warm signal red for failures */
-  --color-alert-500: #e0544a;
-  --color-alert-400: #ee7167;
+  /* Alert → coral red for failures */
+  --color-alert-500: #ec5f5f;
+  --color-alert-400: #f27d7d;
 
   /* Signal → amber for warnings / cancelled */
-  --color-signal-500: #dfa53a;
-  --color-signal-400: #edbb5e;
+  --color-signal-500: #e6a53a;
+  --color-signal-400: #f0bd5e;
 
   /* Fonts */
-  --font-display: 'Archivo', system-ui, sans-serif;
-  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
 }
 
-/* Warm text ramp + machined seams (referenced throughout) */
+/* Cool text ramp + measured seams */
 :root {
-  --ink: #ece4d8;         /* warm off-white */
-  --ink-muted: #a99c8a;
-  --ink-faint: #6e6355;
-  --seam: rgba(236, 228, 216, 0.08);   /* hairline between panel and ground */
-  --seam-strong: rgba(236, 228, 216, 0.14);
-  --top-sheen: rgba(255, 246, 236, 0.05); /* brushed-metal top highlight */
+  --ink: #e7ecf2;         /* cool off-white */
+  --ink-muted: #93a0b0;
+  --ink-faint: #5e6b7a;
+  --seam: rgba(231, 236, 242, 0.09);      /* hairline between panel and ground */
+  --seam-strong: rgba(231, 236, 242, 0.16);
 
   font-family: var(--font-body);
   line-height: 1.55;
@@ -69,103 +69,96 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* A faint forge-glow at the top, over warm graphite — no cyan halo. */
-  background:
-    radial-gradient(120% 60% at 50% -10%, rgba(222, 124, 62, 0.10), transparent 60%),
-    linear-gradient(to bottom, var(--color-void-950), #100d0a);
+  /* A faint measured grid over cool slate — no glow, no radial halo. */
+  background-color: var(--color-void-950);
+  background-image:
+    linear-gradient(rgba(76, 141, 240, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76, 141, 240, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
   background-attachment: fixed;
 }
 
 #root { min-height: 100vh; }
 
-/* Headings wear the industrial display face by default. */
-h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.01em; }
+/* Display face + tight tracking for headings. */
+h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.015em; }
 
 /* -------------------------------------------------------------------------
-   Panels — solid brushed steel, not glassmorphism. A crisp warm seam and a
-   thin top sheen read as a machined metal plate under low light.
+   Panels — flat matte cards, a solid fill and one crisp seam. No blur, no
+   gradient; a single hairline reads as a machined edge, not glass.
    ------------------------------------------------------------------------- */
 .glass-card {
-  background: linear-gradient(180deg, #221c15, #1a1610);
+  background: var(--color-void-900);
   border: 1px solid var(--seam);
-  border-top-color: var(--top-sheen);
-  border-radius: 6px;
-  box-shadow: 0 1px 0 var(--top-sheen) inset, 0 10px 28px rgba(0, 0, 0, 0.45);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.15s ease;
 }
-.glass-card:hover {
-  border-color: var(--seam-strong);
-  box-shadow: 0 1px 0 var(--top-sheen) inset, 0 12px 34px rgba(0, 0, 0, 0.5);
-}
+.glass-card:hover { border-color: var(--seam-strong); }
 
 .stat-card {
-  background: linear-gradient(180deg, #221c15, #1a1610);
+  background: var(--color-void-900);
   border: 1px solid var(--seam);
-  border-top-color: var(--top-sheen);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 20px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.15s ease;
 }
-.stat-card:hover {
-  border-color: rgba(222, 124, 62, 0.35);
-  box-shadow: 0 0 0 1px rgba(222, 124, 62, 0.12);
-}
+.stat-card:hover { border-color: rgba(76, 141, 240, 0.4); }
 
 /* -------------------------------------------------------------------------
-   Buttons — the primary action is struck in hot copper.
+   Buttons — flat solid fills, no gradient or glow.
    ------------------------------------------------------------------------- */
 .btn-cyber {
-  background: linear-gradient(180deg, var(--color-cyber-500), var(--color-cyber-600));
-  color: #1a0f06;
-  border: 1px solid rgba(255, 210, 170, 0.25);
-  padding: 10px 22px;
-  border-radius: 5px;
+  background: var(--color-cyber-500);
+  color: #071018;
+  border: 1px solid var(--color-cyber-400);
+  padding: 9px 20px;
+  border-radius: 7px;
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-weight: 600;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
-  box-shadow: 0 1px 0 rgba(255, 224, 196, 0.35) inset, 0 6px 16px rgba(198, 105, 47, 0.3);
+  transition: background 0.15s ease, transform 0.1s ease;
 }
-.btn-cyber:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 1px 0 rgba(255, 224, 196, 0.4) inset, 0 8px 22px rgba(198, 105, 47, 0.4); }
-.btn-cyber:active { transform: translateY(0) scale(0.99); }
-.btn-cyber:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
+.btn-cyber:hover { background: var(--color-cyber-400); }
+.btn-cyber:active { transform: translateY(1px); }
+.btn-cyber:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .btn-ghost {
   background: transparent;
   color: var(--color-cyber-300);
-  border: 1px solid rgba(222, 124, 62, 0.4);
-  padding: 10px 22px;
-  border-radius: 5px;
+  border: 1px solid var(--color-void-600);
+  padding: 9px 20px;
+  border-radius: 7px;
   font-family: var(--font-display);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
-.btn-ghost:hover { background: rgba(222, 124, 62, 0.1); border-color: var(--color-cyber-400); }
+.btn-ghost:hover { border-color: var(--color-cyber-500); color: var(--color-cyber-200); }
 
 .btn-danger {
-  background: rgba(224, 84, 74, 0.1);
+  background: transparent;
   color: var(--color-alert-400);
-  border: 1px solid rgba(224, 84, 74, 0.35);
-  padding: 10px 22px;
-  border-radius: 5px;
+  border: 1px solid rgba(236, 95, 95, 0.4);
+  padding: 9px 20px;
+  border-radius: 7px;
   font-family: var(--font-display);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
-.btn-danger:hover { background: rgba(224, 84, 74, 0.2); border-color: var(--color-alert-500); }
+.btn-danger:hover { background: rgba(236, 95, 95, 0.12); border-color: var(--color-alert-500); }
 
 /* -------------------------------------------------------------------------
-   Inputs — recessed slots in the steel panel.
+   Inputs — recessed flat wells.
    ------------------------------------------------------------------------- */
 .input-field {
-  background: #16120d;
+  background: var(--color-void-950);
   border: 1px solid var(--color-void-700);
   color: var(--ink);
-  padding: 11px 14px;
-  border-radius: 5px;
+  padding: 10px 13px;
+  border-radius: 7px;
   font-family: var(--font-body);
   font-size: 14px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -174,83 +167,82 @@ h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.01em; 
 .input-field:focus {
   outline: none;
   border-color: var(--color-cyber-500);
-  box-shadow: 0 0 0 3px rgba(222, 124, 62, 0.15);
+  box-shadow: 0 0 0 3px rgba(76, 141, 240, 0.18);
 }
 .input-field::placeholder { color: var(--ink-faint); }
 
 /* -------------------------------------------------------------------------
-   Status — squared machine indicators with an LED dot. Running glows ember
-   like hot metal.
+   Status — flat chips with a solid indicator dot. Running blinks cobalt.
    ------------------------------------------------------------------------- */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 3px 10px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   font-family: var(--font-mono);
 }
-.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
-.badge-pending   { background: rgba(169, 156, 138, 0.12); color: var(--ink-muted); border: 1px solid rgba(169, 156, 138, 0.25); }
-.badge-running   { background: rgba(222, 124, 62, 0.14); color: var(--color-cyber-400); border: 1px solid rgba(222, 124, 62, 0.35); }
-.badge-running::before { animation: forge-pulse 1.4s ease-in-out infinite; }
-.badge-completed { background: rgba(79, 169, 138, 0.14); color: var(--color-matrix-400); border: 1px solid rgba(79, 169, 138, 0.32); }
-.badge-failed    { background: rgba(224, 84, 74, 0.14); color: var(--color-alert-400); border: 1px solid rgba(224, 84, 74, 0.32); }
-.badge-cancelled { background: rgba(223, 165, 58, 0.14); color: var(--color-signal-400); border: 1px solid rgba(223, 165, 58, 0.32); }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 2px; background: currentColor; }
+.badge-pending   { background: rgba(147, 160, 176, 0.12); color: var(--ink-muted); border: 1px solid rgba(147, 160, 176, 0.22); }
+.badge-running   { background: rgba(76, 141, 240, 0.14); color: var(--color-cyber-400); border: 1px solid rgba(76, 141, 240, 0.32); }
+.badge-running::before { border-radius: 50%; animation: blink 1.3s steps(2, start) infinite; }
+.badge-completed { background: rgba(51, 196, 137, 0.14); color: var(--color-matrix-400); border: 1px solid rgba(51, 196, 137, 0.3); }
+.badge-failed    { background: rgba(236, 95, 95, 0.14); color: var(--color-alert-400); border: 1px solid rgba(236, 95, 95, 0.3); }
+.badge-cancelled { background: rgba(230, 165, 58, 0.14); color: var(--color-signal-400); border: 1px solid rgba(230, 165, 58, 0.3); }
 
 /* -------------------------------------------------------------------------
-   Navigation — a control-panel rail; the active tool is marked in ember.
+   Navigation — flat rail; the active tool gets a solid cobalt marker.
    ------------------------------------------------------------------------- */
 .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
-  border-radius: 5px;
+  padding: 10px 13px;
+  border-radius: 7px;
   color: var(--ink-muted);
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.13s ease, color 0.13s ease;
   text-decoration: none;
   border-left: 2px solid transparent;
 }
-.nav-item:hover { background: rgba(236, 228, 216, 0.04); color: var(--ink); }
+.nav-item:hover { background: rgba(231, 236, 242, 0.04); color: var(--ink); }
 .nav-item.active {
-  background: rgba(222, 124, 62, 0.12);
+  background: rgba(76, 141, 240, 0.12);
   color: var(--color-cyber-300);
   border-left-color: var(--color-cyber-500);
 }
 
 /* -------------------------------------------------------------------------
-   Log viewer — a machined terminal readout.
+   Log viewer — a flat terminal readout.
    ------------------------------------------------------------------------- */
 .log-viewer {
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.6;
-  background: #100d09;
+  background: #0b0f14;
   border: 1px solid var(--color-void-700);
-  border-radius: 6px;
+  border-radius: 8px;
 }
-.log-line { padding: 2px 14px; white-space: pre-wrap; word-break: break-word; border-bottom: 1px solid rgba(236, 228, 216, 0.03); }
-.log-line:hover { background: rgba(222, 124, 62, 0.05); }
+.log-line { padding: 2px 14px; white-space: pre-wrap; word-break: break-word; border-bottom: 1px solid rgba(231, 236, 242, 0.03); }
+.log-line:hover { background: rgba(76, 141, 240, 0.05); }
 
 /* Data tables */
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th {
   text-align: left; padding: 12px 16px;
-  font-family: var(--font-mono); font-weight: 600; font-size: 11px;
-  text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint);
+  font-family: var(--font-mono); font-weight: 500; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint);
   border-bottom: 1px solid var(--color-void-700);
 }
 .data-table td { padding: 16px; border-bottom: 1px solid var(--seam); color: var(--ink); }
-.data-table tr:hover td { background: rgba(222, 124, 62, 0.03); }
+.data-table tr:hover td { background: rgba(76, 141, 240, 0.03); }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
@@ -258,9 +250,9 @@ h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.01em; 
 ::-webkit-scrollbar-thumb { background: var(--color-void-600); border-radius: 5px; border: 2px solid var(--color-void-900); }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-cyber-600); }
 
-/* Animations — heat, not neon. */
-@keyframes forge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-@keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 4px rgba(222, 124, 62, 0.5); } 50% { box-shadow: 0 0 18px rgba(222, 124, 62, 0.85); } }
+/* Animations — a blink, not a neon pulse. */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(76, 141, 240, 0.4); } 50% { box-shadow: 0 0 0 4px rgba(76, 141, 240, 0.12); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 .animate-spin { animation: spin 1s linear infinite; }
@@ -270,46 +262,45 @@ h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.01em; 
 }
 
 /* -------------------------------------------------------------------------
-   Ant Design overrides — bind antd's chrome to the Foundry tokens.
+   Ant Design overrides — bind antd's chrome to the Instrument tokens (flat).
    ------------------------------------------------------------------------- */
 .ant-card { background: transparent !important; border: none !important; }
 .ant-menu { background: transparent !important; }
 .ant-menu-item { color: var(--ink-muted) !important; }
-.ant-menu-item:hover { color: var(--ink) !important; background: rgba(236, 228, 216, 0.04) !important; }
-.ant-menu-item-selected { background: rgba(222, 124, 62, 0.12) !important; color: var(--color-cyber-300) !important; }
+.ant-menu-item:hover { color: var(--ink) !important; background: rgba(231, 236, 242, 0.04) !important; }
+.ant-menu-item-selected { background: rgba(76, 141, 240, 0.12) !important; color: var(--color-cyber-300) !important; }
 
-.ant-progress-bg { background: linear-gradient(90deg, var(--color-cyber-600), var(--color-cyber-400)) !important; }
+.ant-progress-bg { background: var(--color-cyber-500) !important; }
 .ant-progress-inner { background: var(--color-void-700) !important; }
 
 .ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-picker, .ant-input-number {
-  background: #16120d !important; border-color: var(--color-void-700) !important; color: var(--ink) !important;
+  background: var(--color-void-950) !important; border-color: var(--color-void-700) !important; color: var(--ink) !important;
 }
 .ant-input:focus, .ant-input-affix-wrapper:focus, .ant-input-affix-wrapper-focused {
-  border-color: var(--color-cyber-500) !important; box-shadow: 0 0 0 2px rgba(222, 124, 62, 0.15) !important;
+  border-color: var(--color-cyber-500) !important; box-shadow: 0 0 0 2px rgba(76, 141, 240, 0.18) !important;
 }
 .ant-select-dropdown, .ant-picker-dropdown { background: var(--color-void-800) !important; border: 1px solid var(--color-void-700) !important; }
 .ant-select-item { color: var(--ink) !important; }
-.ant-select-item-option-active { background: rgba(222, 124, 62, 0.1) !important; }
-.ant-select-item-option-selected { background: rgba(222, 124, 62, 0.2) !important; }
+.ant-select-item-option-active { background: rgba(76, 141, 240, 0.1) !important; }
+.ant-select-item-option-selected { background: rgba(76, 141, 240, 0.2) !important; }
 
 .ant-btn-primary {
-  background: linear-gradient(180deg, var(--color-cyber-500), var(--color-cyber-600)) !important;
-  border: 1px solid rgba(255, 210, 170, 0.25) !important; color: #1a0f06 !important; font-weight: 700 !important;
-  box-shadow: 0 1px 0 rgba(255, 224, 196, 0.3) inset, 0 4px 12px rgba(198, 105, 47, 0.3) !important;
+  background: var(--color-cyber-500) !important; border: 1px solid var(--color-cyber-400) !important;
+  color: #071018 !important; font-weight: 600 !important; box-shadow: none !important;
 }
-.ant-btn-primary:hover { filter: brightness(1.05); box-shadow: 0 1px 0 rgba(255, 224, 196, 0.35) inset, 0 6px 18px rgba(198, 105, 47, 0.4) !important; }
+.ant-btn-primary:hover { background: var(--color-cyber-400) !important; }
 .ant-btn-default { background: transparent !important; border-color: var(--color-void-600) !important; color: var(--ink) !important; }
-.ant-btn-default:hover { border-color: var(--color-cyber-500) !important; color: var(--color-cyber-300) !important; }
-.ant-btn-dangerous { color: var(--color-alert-400) !important; border-color: rgba(224, 84, 74, 0.4) !important; }
+.ant-btn-default:hover { border-color: var(--color-cyber-500) !important; color: var(--color-cyber-200) !important; }
+.ant-btn-dangerous { color: var(--color-alert-400) !important; border-color: rgba(236, 95, 95, 0.4) !important; }
 
 .ant-table { background: transparent !important; }
 .ant-table-thead > tr > th {
   background: var(--color-void-800) !important; color: var(--ink-muted) !important;
   border-bottom: 1px solid var(--color-void-700) !important;
-  font-family: var(--font-mono) !important; font-size: 12px !important; letter-spacing: 0.04em !important;
+  font-family: var(--font-mono) !important; font-size: 12px !important; font-weight: 500 !important; letter-spacing: 0.03em !important;
 }
 .ant-table-tbody > tr > td { background: transparent !important; color: var(--ink) !important; border-bottom: 1px solid var(--seam) !important; }
-.ant-table-tbody > tr:hover > td { background: rgba(222, 124, 62, 0.03) !important; }
+.ant-table-tbody > tr:hover > td { background: rgba(76, 141, 240, 0.03) !important; }
 
 .ant-pagination-item { background: var(--color-void-800) !important; border-color: var(--color-void-700) !important; }
 .ant-pagination-item a { color: var(--ink) !important; }
@@ -324,7 +315,7 @@ h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.01em; 
 .ant-spin-dot-item { background: var(--color-cyber-500) !important; }
 .ant-descriptions-item-label { color: var(--ink-faint) !important; }
 .ant-descriptions-item-content { color: var(--ink) !important; }
-.ant-tag { border-radius: 4px !important; font-family: var(--font-mono) !important; }
+.ant-tag { border-radius: 5px !important; font-family: var(--font-mono) !important; }
 
 .ant-modal-content { background: var(--color-void-800) !important; border: 1px solid var(--color-void-700) !important; }
 .ant-modal-header { background: var(--color-void-800) !important; border-bottom: 1px solid var(--color-void-700) !important; }
@@ -341,8 +332,8 @@ h1, h2, h3, h4, h5 { font-family: var(--font-display); letter-spacing: -0.01em; 
 .ant-checkbox-checked .ant-checkbox-inner { background: var(--color-cyber-500) !important; border-color: var(--color-cyber-500) !important; }
 
 .ant-form-item-explain-error { color: var(--color-alert-400) !important; }
-.ant-input-textarea textarea { background: #16120d !important; color: var(--ink) !important; }
+.ant-input-textarea textarea { background: var(--color-void-950) !important; color: var(--ink) !important; }
 
-.ant-radio-button-wrapper-checked { background: rgba(222, 124, 62, 0.15) !important; border-color: var(--color-cyber-500) !important; color: var(--color-cyber-300) !important; }
+.ant-radio-button-wrapper-checked { background: rgba(76, 141, 240, 0.15) !important; border-color: var(--color-cyber-500) !important; color: var(--color-cyber-300) !important; }
 .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn { color: var(--color-cyber-300) !important; }
 .ant-tabs-ink-bar { background: var(--color-cyber-500) !important; }
