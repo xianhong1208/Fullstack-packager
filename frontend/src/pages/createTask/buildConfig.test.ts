@@ -13,7 +13,7 @@ const base = {
   project_name: 'token-server',
   project_type: 'backend_only',
   source_type: 'local',
-  project_path: '/media/disk0/Tony/token-server',
+  project_path: '/srv/projects/demo',
   pack_mode: 'full',
 }
 
@@ -28,7 +28,7 @@ describe('assembleTaskCreate — source modes are mutually exclusive', () => {
       source_type: 'git',
       git_url: 'https://gitlab.example.com/g/p.git',
       git_ref: 'main',
-      project_path: '/media/disk0/leftover',
+      project_path: '/srv/leftover',
     })
     expect(config.project_path).toBe('')
     expect(config.git_url).toBe('https://gitlab.example.com/g/p.git')
@@ -42,7 +42,7 @@ describe('assembleTaskCreate — source modes are mutually exclusive', () => {
     })
     expect(config.git_url).toBe('')
     expect(config.git_ref).toBe('')
-    expect(config.project_path).toBe('/media/disk0/Tony/token-server')
+    expect(config.project_path).toBe('/srv/projects/demo')
   })
 
   it('trims whitespace pasted around a git URL', () => {

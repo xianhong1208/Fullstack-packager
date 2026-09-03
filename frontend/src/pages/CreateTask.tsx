@@ -128,7 +128,6 @@ export default function CreateTask() {
   // Compile targets actually available on the server (detected from the
   // per-version Nuitka venvs) — falls back to a static list until loaded
   const [pythonVersions, setPythonVersions] = useState<string[]>(['3.14', '3.13', '3.12'])
-  const [workspaceDir, setWorkspaceDir] = useState<string>('/media/disk1/Build_workspace')
 
   // Watch form values for conditional rendering
   const projectType = Form.useWatch('project_type', form) as ProjectType
@@ -197,6 +196,9 @@ export default function CreateTask() {
 
   const hasBackend = projectType === 'backend_only' || projectType === 'fullstack'
   const showFrontendSettings = projectType === 'frontend_only' || projectType === 'fullstack'
+
+  // Server-configured build workspace root (GIT_WORKSPACE_DIR); empty until fetched.
+  const [workspaceDir, setWorkspaceDir] = useState<string>('')
 
   // Fetch CPU core count on mount
   useEffect(() => {
@@ -1088,18 +1090,18 @@ export default function CreateTask() {
               <Form.Item
                 name="project_path"
                 label={<span style={{ color: 'var(--ink-muted)' }}>Project path</span>}
-                tooltip="Absolute path on the server. It must live under /media/disk0/ or /media/disk1/."
+                tooltip="Absolute path to the project on the server. The allowed roots are set by the operator (LOCAL_SOURCE_ROOTS)."
                 validateTrigger={['onBlur', 'onChange']}
                 rules={[
                   { required: true, message: 'Enter the project path' },
                   {
-                    pattern: /^\/media\/disk[01]\//,
-                    message: 'The path must start with /media/disk0/ or /media/disk1/',
+                    pattern: /^\//,
+                    message: 'Enter an absolute path (starting with /)',
                   },
                 ]}
               >
                 <Input
-                  placeholder="/media/disk0/Tony/my-project"
+                  placeholder="/path/to/your/project"
                   className="input-field"
                   size="large"
                 />
@@ -1230,7 +1232,7 @@ export default function CreateTask() {
                 {/* Git mode hint */}
                 <div className="text-xs" style={{ color: 'var(--ink-faint)', lineHeight: 1.6 }}>
                   <ScanOutlined className="mr-1" />
-                  After the build starts, the server clones into <code style={{ color: 'var(--ink-muted)' }}>{workspaceDir}/&lt;task_id&gt;</code>.
+                  After the build starts, the server clones the repo into a per-task workspace{workspaceDir ? <> under <code style={{ color: 'var(--ink-muted)' }}>{workspaceDir}</code></> : null}.
                   When it finishes, open the task detail page to see the repo-structure diagnostics.
                   {hasBackend && (
                     <>

@@ -69,9 +69,8 @@ export default function HistoryDetail() {
   })
   const logs = logsData?.logs ?? []
 
-  // Server-configured workspace root (GIT_WORKSPACE_DIR) — the static
-  // string is only the pre-fetch fallback
-  const [workspaceDir, setWorkspaceDir] = useState<string>('/media/disk1/Build_workspace')
+  // Server-configured workspace root (GIT_WORKSPACE_DIR); empty until fetched.
+  const [workspaceDir, setWorkspaceDir] = useState<string>('')
   useEffect(() => {
     taskApi.getSystemInfo().then((info) => {
       if (info.git_workspace_dir) setWorkspaceDir(info.git_workspace_dir)
@@ -86,8 +85,7 @@ export default function HistoryDetail() {
       content: (
         <div>
           <p>
-            This removes everything under <code>{workspaceDir}/{record.task_id}</code>, including the
-            cloned source and its <code>.venv</code>.
+            This removes the task's workspace on the server{workspaceDir ? <> (<code>{workspaceDir}/{record.task_id}</code>)</> : ''} — the cloned source and its <code>.venv</code>.
           </p>
           {record.status === 'completed' && !record.config?.docker_enabled && (
             <p className="text-orange-400">
@@ -592,7 +590,7 @@ export default function HistoryDetail() {
                     </Descriptions.Item>
                     <Descriptions.Item label="Workspace" span={2}>
                       <code style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
-                        {workspaceDir}/{record.task_id}
+                        {workspaceDir ? `${workspaceDir}/${record.task_id}` : record.task_id}
                       </code>
                     </Descriptions.Item>
                   </>
