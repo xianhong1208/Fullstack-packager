@@ -35,7 +35,12 @@ class RefreshToken(Base):
         """Check if token is still valid (not expired and not revoked)."""
         from datetime import timezone
         now = datetime.now(timezone.utc)
-        return self.revoked_at is None and self.expires_at > now
+        # SQLite stores DateTime(timezone=True) without tzinfo; treat a naive
+        # expires_at as UTC so the comparison works on both SQLite and PostgreSQL.
+        expires = self.expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        return self.revoked_at is None and expires > now
 
     def __repr__(self) -> str:
         status = "valid" if self.is_valid else "invalid"

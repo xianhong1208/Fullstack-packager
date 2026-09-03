@@ -35,7 +35,11 @@ class PasswordResetToken(Base):
         """Check if token is still valid (not expired and not used)."""
         from datetime import timezone
         now = datetime.now(timezone.utc)
-        return self.used_at is None and self.expires_at > now
+        # SQLite returns naive datetimes for DateTime(timezone=True); assume UTC.
+        expires = self.expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        return self.used_at is None and expires > now
 
     def __repr__(self) -> str:
         status = "valid" if self.is_valid else "invalid"
