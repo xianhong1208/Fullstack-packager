@@ -18,7 +18,6 @@ import {
   AutoComplete,
   Collapse,
   Radio,
-  Segmented,
   Tour,
   type TourProps,
 } from 'antd'
@@ -73,22 +72,21 @@ export default function CreateTask() {
   // collapse panels folded so newcomers only see the core fields; Advanced
   // expands everything at once. Users can still fold/unfold individual
   // panels manually — the mode toggle only sets their initial state.
-  const [simpleMode, setSimpleMode] = useState(true)
   const [backendAdvKeys, setBackendAdvKeys] = useState<string[]>([])
   const [dockerAdvKeys, setDockerAdvKeys] = useState<string[]>([])
-  useEffect(() => {
-    setBackendAdvKeys(simpleMode ? [] : ['backend-advanced'])
-    setDockerAdvKeys(simpleMode ? [] : ['docker-advanced'])
-  }, [simpleMode])
 
   // Rebuild state from History or TaskDetail navigation
   const rebuildState = location.state as RebuildState | null
   const isRebuild = rebuildState?.rebuild === true
 
-  // Rebuild carries the original task's advanced values — start in Advanced
-  // mode so they're visible rather than hidden behind a collapsed panel.
+  // Rebuild carries the original task's advanced values — open the relevant
+  // advanced panels so they are visible rather than hidden in a collapsed section.
   useEffect(() => {
-    if (isRebuild) setSimpleMode(false)
+    if (!isRebuild || !rebuildState?.config) return
+    const c = rebuildState.config
+    if (c.nuitka_jobs || c.include_packages || c.extra_dirs || c.data_dirs) setBackendAdvKeys(['backend-advanced'])
+    if (c.docker_env_vars || c.docker_custom_commands || c.docker_install_node) setDockerAdvKeys(['docker-advanced'])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRebuild])
 
   // ── Draft persistence ──────────────────────────────────────────────
@@ -785,18 +783,6 @@ export default function CreateTask() {
 
   const goBack = () => setCurrentStep((s) => Math.max(0, s - 1))
 
-  // Rebuild advanced panel keys
-  const rebuildAdvancedKeys: string[] = []
-  if (isRebuild && rebuildState?.config) {
-    const c = rebuildState.config
-    if (c.nuitka_jobs || c.include_packages || c.extra_dirs || c.data_dirs) {
-      rebuildAdvancedKeys.push('backend-advanced')
-    }
-    if (c.docker_env_vars || c.docker_custom_commands || c.docker_install_node) {
-      rebuildAdvancedKeys.push('docker-advanced')
-    }
-  }
-
   // ── Section panel header (flat, hairline seam under the title) ──
   const SectionHeader = ({ icon, title, tone = 'cyber', action }: { icon: React.ReactNode; title: string; tone?: 'cyber' | 'matrix' | 'signal'; action?: React.ReactNode }) => (
     <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--seam)]">
@@ -852,16 +838,6 @@ export default function CreateTask() {
             </div>
           )}
         </div>
-        <Tooltip title="Simple shows only the core fields and keeps advanced options collapsed. Advanced expands everything at once. You can switch anytime, or open individual sections by hand.">
-          <Segmented
-            value={simpleMode ? 'simple' : 'advanced'}
-            onChange={(v) => setSimpleMode(v === 'simple')}
-            options={[
-              { label: 'Simple', value: 'simple' },
-              { label: 'Advanced', value: 'advanced' },
-            ]}
-          />
-        </Tooltip>
       </div>
 
       {/* Mobile step progress — slim indicator that replaces the rail below lg */}
