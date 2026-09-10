@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { ConfigProvider, Spin, Modal, Drawer } from 'antd'
+import { ConfigProvider, Spin, Modal, Drawer, App as AntApp } from 'antd'
 import enUS from 'antd/locale/en_US'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -391,7 +391,8 @@ function App() {
           },
         }}
       >
-        <AuthProvider>
+        <AntApp component={false}>
+          <AuthProvider>
           <BrowserRouter>
             <Suspense
               fallback={
@@ -454,7 +455,8 @@ function App() {
             </Routes>
             </Suspense>
           </BrowserRouter>
-        </AuthProvider>
+          </AuthProvider>
+        </AntApp>
       </ConfigProvider>
     </QueryClientProvider>
   )

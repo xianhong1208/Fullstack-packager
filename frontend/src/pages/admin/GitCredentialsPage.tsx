@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   App as AntApp,
@@ -12,6 +12,7 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
@@ -78,17 +79,27 @@ export default function GitCredentialsPage() {
 
   const openCreate = () => {
     setEditing(null)
-    form.resetFields()
-    form.setFieldsValue({ provider: 'github' })
     setModalOpen(true)
   }
 
   const openEdit = (cred: GitCredential) => {
     setEditing(cred)
-    form.resetFields()
-    form.setFieldsValue({ provider: cred.provider, host: cred.host, label: cred.label ?? '' })
     setModalOpen(true)
   }
+
+  // Populate the form only after the modal (and its Form) has mounted. Setting
+  // fields straight from the click handler runs before the Form connects, so
+  // the values are dropped and the fields render blank — the reason editing
+  // showed an empty Provider. Running it in an effect keyed on `modalOpen`
+  // guarantees the Form is mounted first.
+  useEffect(() => {
+    if (!modalOpen) return
+    if (editing) {
+      form.setFieldsValue({ label: editing.label ?? '', token: '' })
+    } else {
+      form.setFieldsValue({ provider: 'github', host: '', label: '', token: '' })
+    }
+  }, [modalOpen, editing, form])
 
   const handleSubmit = async () => {
     const values = await form.validateFields()
@@ -141,17 +152,19 @@ export default function GitCredentialsPage() {
       key: 'actions',
       width: 120,
       render: (_: unknown, cred: GitCredential) => (
-        <Space>
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(cred)} />
+        <Space size="small">
+          <Tooltip title="Edit">
+            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEdit(cred)} />
+          </Tooltip>
           <Popconfirm
             title="Delete this credential?"
             description="Builds cloning private repos from this host will fail to authenticate."
             okText="Delete"
-            okButtonProps={{ danger: true }}
+            okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
             cancelText="Cancel"
             onConfirm={() => deleteMutation.mutate(cred.id)}
           >
-            <Button size="small" danger icon={<DeleteOutlined />} />
+            <Button type="text" size="small" danger icon={<DeleteOutlined />} aria-label="Delete" />
           </Popconfirm>
         </Space>
       ),
@@ -201,41 +214,64 @@ export default function GitCredentialsPage() {
         confirmLoading={createMutation.isPending || updateMutation.isPending}
         okText={editing ? 'Save' : 'Add'}
         cancelText="Cancel"
-        destroyOnClose
+        forceRender
       >
         <Form form={form} layout="vertical" className="mt-4">
-          <Form.Item name="provider" label="Provider" rules={[{ required: true }]}>
-            <Select
-              disabled={!!editing}
-              onChange={(p: GitProvider) => {
-                if (!editing && !form.getFieldValue('host')) {
-                  form.setFieldValue('host', PROVIDER_META[p].defaultHost)
-                }
-              }}
-              options={(Object.keys(PROVIDER_META) as GitProvider[]).map((p) => ({
-                value: p,
-                label: PROVIDER_META[p].label,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item
-            name="host"
-            label="Host"
-            tooltip="The Git server hostname, e.g. github.com or a self-hosted gitlab.example.com"
-            rules={[
-              {
-                validator: (_, value) => {
-                  const provider = form.getFieldValue('provider')
-                  if (provider === 'generic' && !value?.trim()) {
-                    return Promise.reject(new Error('A host is required for self-hosted providers'))
-                  }
-                  return Promise.resolve()
-                },
-              },
-            ]}
-          >
-            <Input placeholder="Leave blank to use the default (github.com / gitlab.com)" disabled={!!editing} />
-          </Form.Item>
+          {editing ? (
+            // Provider and host are the credential's identity (host is the lookup
+            // key, provider sets the token-injection format), so they are fixed
+            // once created — shown read-only rather than as disabled inputs.
+            <div
+              className="mb-5 rounded-lg px-4 py-3"
+              style={{ background: 'var(--color-void-800)', border: '1px solid var(--seam)' }}
+            >
+              <div className="flex items-center justify-between">
+                <Text type="secondary">Provider</Text>
+                <Tag color={PROVIDER_META[editing.provider].color} style={{ marginInlineEnd: 0 }}>
+                  {PROVIDER_META[editing.provider].label}
+                </Tag>
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <Text type="secondary">Host</Text>
+                <Text code>{editing.host}</Text>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Form.Item name="provider" label="Provider" rules={[{ required: true }]}>
+                <Select
+                  onChange={(p: GitProvider) => {
+                    // Prefill the cloud default; the user overrides it for a
+                    // self-hosted host (e.g. gitlab.example.com).
+                    form.setFieldValue('host', PROVIDER_META[p].defaultHost)
+                  }}
+                  options={(Object.keys(PROVIDER_META) as GitProvider[]).map((p) => ({
+                    value: p,
+                    label: PROVIDER_META[p].label,
+                  }))}
+                />
+              </Form.Item>
+              <Form.Item
+                name="host"
+                label="Host"
+                tooltip="Hostname only — no https:// and no path. For a self-hosted GitLab or GitHub Enterprise, pick the matching provider and enter its hostname, e.g. gitlab.example.com"
+                extra="Self-hosted GitLab / GitHub Enterprise: choose the matching provider so the token is injected in the right format, then enter the server hostname here."
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      const provider = form.getFieldValue('provider')
+                      if (provider === 'generic' && !value?.trim()) {
+                        return Promise.reject(new Error('A host is required for self-hosted providers'))
+                      }
+                      return Promise.resolve()
+                    },
+                  },
+                ]}
+              >
+                <Input placeholder="e.g. gitlab.example.com — or leave blank for github.com / gitlab.com" />
+              </Form.Item>
+            </>
+          )}
           <Form.Item name="label" label="Label (optional)">
             <Input placeholder="e.g. Personal GitHub" maxLength={128} />
           </Form.Item>

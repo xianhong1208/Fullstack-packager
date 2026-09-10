@@ -1513,7 +1513,7 @@ export default function CreateTask() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => fetchDirectories(projectPath || '')}
+                                  onClick={() => { if (sourceType === 'git') { void handleScanGitTree() } else { void fetchDirectories(projectPath || '') } }}
                                   className="p-1"
                                   style={{ color: 'var(--ink-muted)' }}
                                   title="Refresh"
@@ -1527,7 +1527,7 @@ export default function CreateTask() {
                             These directories are compiled into the binary as Python source (importable). Pick the package and module directories other than your entry point.
                           </div>
                           <div className="rounded-lg border border-[var(--seam)] bg-void-950 p-4 min-h-[60px]">
-                            {loadingDirs ? (
+                            {(loadingDirs || scanningTree) ? (
                               <div className="flex items-center justify-center py-2">
                                 <Spin size="small" />
                                 <span className="ml-2 text-sm" style={{ color: 'var(--ink-muted)' }}>Loading…</span>
@@ -1571,7 +1571,7 @@ export default function CreateTask() {
                             These directories aren't compiled in — they're copied unchanged next to the binary after the build. Good for static files, templates, and config.
                           </div>
                           <div className="rounded-lg border border-[var(--seam)] bg-void-950 p-4 min-h-[60px]">
-                            {loadingDirs ? (
+                            {(loadingDirs || scanningTree) ? (
                               <div className="flex items-center justify-center py-2">
                                 <Spin size="small" />
                               </div>
