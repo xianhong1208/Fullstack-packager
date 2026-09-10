@@ -66,11 +66,48 @@ Everything is environment-driven. `.env.example` lists the essentials; `app/conf
 | `JWT_SECRET_KEY` | auto | Session signing key; generated to `.env` on first start if empty. |
 | `SETTINGS_ENCRYPTION_KEY` | auto | Encrypts stored Git tokens; generated to `.env` if empty. |
 | `CORS_ORIGINS` | dev ports | CSV of browser origins allowed to call the API. |
-| `GIT_WORKSPACE_DIR` | `./data/workspace` | Where clones and build workspaces live. |
+| `GIT_WORKSPACE_DIR` | `./data/workspace` | Where clones and build workspaces live (and where non-Docker outputs are downloaded from). |
+| `DOCKER_IMAGES_DIR` | `./data/docker_images` | Where exported Docker images (`.tar.gz`) are written. |
 | `LOCAL_SOURCE_ROOTS` | *(empty)* | CSV of absolute prefixes a local-source build may read; empty disables local mode. |
 | `UV_BIN` / `PRE_BUILD_PATH` | auto | uv binary and subprocess PATH; auto-detected when empty. |
 | `MAX_CONCURRENT_BUILDS` | `3` | Simultaneous Nuitka builds. |
 | `TRUSTED_PROXY_IPS` | *(empty)* | Proxy IPs whose `X-Forwarded-For` may be trusted; empty is safest. |
+
+## Storage & data
+
+Build Center writes everything under a single `data/` directory. By default these paths are **relative to the working directory you launch from** (where you run `uv run python main.py`), so a default install keeps all state inside the project:
+
+```
+data/
+├── build_center.db     # SQLite database (users, roles, history, Git credentials)
+├── workspace/          # one dir per build: clone, .venv, and the compiled output
+└── docker_images/      # exported Docker images, as <image>_<tag>.tar.gz
+```
+
+**Where a finished build ends up:**
+- **Binary / bundle** (backend, frontend, full-stack): stays in that build's workspace under `data/workspace/<task-id>/`, and the console's **Download** button streams it from there.
+- **Docker output**: the image is saved to `data/docker_images/` as a `.tar.gz`; load it later with `docker load -i <file>`.
+
+**Relocating storage** (e.g. onto a larger disk) — set absolute paths in `.env` and restart:
+
+```bash
+GIT_WORKSPACE_DIR=/srv/build-center/workspace     # clones, builds, downloadable outputs
+DOCKER_IMAGES_DIR=/srv/build-center/docker_images # exported image tarballs
+# Move the database too (SQLite file, or point at PostgreSQL):
+DATABASE_URL=sqlite+aiosqlite:////srv/build-center/build_center.db
+```
+
+Put `GIT_WORKSPACE_DIR` on the same filesystem as `BOOTSTRAP_UV_CACHE_DIR` so `uv` can hardlink instead of copying during dependency install.
+
+**Retention** — a background sweep reclaims disk on a TTL, so the disk doesn't grow without bound. Because a non-Docker output is downloaded from its workspace, the success TTL doubles as *how long that output stays downloadable*:
+
+| Variable | Default | What it keeps |
+|---|---|---|
+| `WORKSPACE_SUCCESS_TTL_DAYS` | `7` | Successful non-Docker workspaces (i.e. how long the output is downloadable). |
+| `WORKSPACE_FAILED_TTL_DAYS` | `30` | Failed / cancelled workspaces (kept longer for debugging). |
+| `DOCKER_IMAGES_TTL_DAYS` | `30` | Exported image tarballs. |
+
+On a successful build the workspace is also trimmed automatically: a non-Docker build's workspace is shrunk to just its output (dropping the clone, `.venv` and `.git`), and a Docker build's workspace is deleted outright since the image tarball already holds the result.
 
 ## Git credentials
 

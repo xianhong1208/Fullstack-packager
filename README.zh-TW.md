@@ -66,11 +66,48 @@ uv run python main.py         # 先套用 migration,再於 http://0.0.0.0:5018 �
 | `JWT_SECRET_KEY` | 自動 | Session 簽章金鑰;留空則首次啟動產生並寫入 `.env`。 |
 | `SETTINGS_ENCRYPTION_KEY` | 自動 | 加密儲存的 Git token;留空則自動產生寫入 `.env`。 |
 | `CORS_ORIGINS` | 開發埠 | 允許呼叫 API 的瀏覽器來源(CSV)。 |
-| `GIT_WORKSPACE_DIR` | `./data/workspace` | clone 與建置工作區位置。 |
+| `GIT_WORKSPACE_DIR` | `./data/workspace` | clone 與建置工作區位置(非 Docker 產物也從這裡下載)。 |
+| `DOCKER_IMAGES_DIR` | `./data/docker_images` | 匯出的 Docker image(`.tar.gz`)寫入位置。 |
 | `LOCAL_SOURCE_ROOTS` | *(空)* | 本機來源可讀取的絕對路徑前綴(CSV);留空則停用本機模式。 |
 | `UV_BIN` / `PRE_BUILD_PATH` | 自動 | uv 路徑與 subprocess PATH;留空自動偵測。 |
 | `MAX_CONCURRENT_BUILDS` | `3` | 同時進行的 Nuitka 建置數。 |
 | `TRUSTED_PROXY_IPS` | *(空)* | 可信任 `X-Forwarded-For` 的代理 IP;留空最安全。 |
+
+## 儲存與資料
+
+Build Center 所有狀態都寫在單一的 `data/` 目錄下。預設這些路徑是**相對於你啟動時的工作目錄**(執行 `uv run python main.py` 的位置),所以預設安裝會把資料全部放在專案內:
+
+```
+data/
+├── build_center.db     # SQLite 資料庫(使用者、角色、歷史、Git 憑證)
+├── workspace/          # 每個建置一個目錄:clone、.venv、以及編譯產物
+└── docker_images/      # 匯出的 Docker image,檔名為 <image>_<tag>.tar.gz
+```
+
+**建置完成後產物在哪:**
+- **二進位 / 打包產物**(後端、前端、全端):留在該次建置的工作區 `data/workspace/<task-id>/`,管理台的 **Download** 按鈕就是從這裡串流下載。
+- **Docker 輸出**:image 存成 `data/docker_images/` 下的 `.tar.gz`;之後用 `docker load -i <檔案>` 載入。
+
+**搬移儲存位置**(例如換到更大的磁碟)——在 `.env` 設定絕對路徑後重啟:
+
+```bash
+GIT_WORKSPACE_DIR=/srv/build-center/workspace     # clone、建置、可下載的產物
+DOCKER_IMAGES_DIR=/srv/build-center/docker_images # 匯出的 image tarball
+# 資料庫也可一起搬(SQLite 檔,或改指向 PostgreSQL):
+DATABASE_URL=sqlite+aiosqlite:////srv/build-center/build_center.db
+```
+
+把 `GIT_WORKSPACE_DIR` 和 `BOOTSTRAP_UV_CACHE_DIR` 放在同一個檔案系統,`uv` 安裝相依時才能用 hardlink 而非複製。
+
+**保留期限**——背景清理會依 TTL 回收磁碟,避免無限成長。由於非 Docker 產物是從工作區下載的,成功 TTL 同時等於*產物可下載的期限*:
+
+| 變數 | 預設 | 保留內容 |
+|---|---|---|
+| `WORKSPACE_SUCCESS_TTL_DAYS` | `7` | 成功的非 Docker 工作區(即產物可下載多久)。 |
+| `WORKSPACE_FAILED_TTL_DAYS` | `30` | 失敗 / 取消的工作區(保留較久以便除錯)。 |
+| `DOCKER_IMAGES_TTL_DAYS` | `30` | 匯出的 image tarball。 |
+
+建置成功時工作區也會自動精簡:非 Docker 建置只留下產物(丟掉 clone、`.venv`、`.git`),Docker 建置則直接刪除整個工作區,因為 image tarball 已保存結果。
 
 ## Git 憑證
 
